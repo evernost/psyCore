@@ -18,10 +18,56 @@
 
 
 
-class cpu:
+# =============================================================================
+# CONSTANTS POOL
+# =============================================================================
+INSTRUCTION_MEM_SIZE = 1024
+DATA_MEM_SIZE = 1024
+
+PIPELINE_SIZE = 5
+
+N_WORK_REG = 16
+
+
+
+# =============================================================================
+# CLASS DEFINITION
+# =============================================================================
+class cpu :
 
   def __init__(self) :
-    self.pc = 0  # Indicates where the CPU is currently at
+    
+    # Program counter init
+    self.pc = 0 
+
+    # Instruction/data memory init
+    self.iMem = ["NOP" for _ in range(INSTRUCTION_MEM_SIZE)]
+    self.dMem = ["NOP" for _ in range(DATA_MEM_SIZE)]
+
+    # Instruction pipeline init
+    self.pipeline = []
+
+    # Work registers init
+    self.W = [0 for _ in range(N_WORK_REG)]
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu.step()
+  # ---------------------------------------------------------------------------
+  def step(self) :
+    """
+    Reads the next instruction
+    """
+
+
+    # 1. For each instruction: do the task of the current cycle
+    # 2. Read the new instruction, check its syntax and convert it to an 
+    #    Instruction object
+    # 3. Call its execution function
+
+
+    pass
 
 
 
@@ -29,9 +75,9 @@ class cpu:
 # Example code for the instruction memory
 cpu0 = cpu()
 cpu0.IMem = [
-  instruction.txt("MOV 1,[0]"),
-  instruction.txt("BSET W0,1"),
-  instruction.txt("NOP"),
-  instruction.txt("MEET 1")
+  "MOV 1,[0]",
+  "BSET W0,1",
+  "NOP",
+  "MEET 1"
 ]
 
