@@ -19,6 +19,13 @@
 
 
 # =============================================================================
+# EXTERNALS
+# =============================================================================
+# None.
+
+
+
+# =============================================================================
 # CONSTANTS POOL
 # =============================================================================
 # None.
@@ -53,7 +60,7 @@ class instruction :
 
     # Internal parameters
     self._cyclesRemaining = self.latency
-
+    self._normalisedCode = ""   # Normalised string version of the instruction (all caps, proper spacing etc.)
 
 
   # ---------------------------------------------------------------------------
@@ -83,3 +90,34 @@ class instruction :
     
     pass
 
+
+
+
+# ---------------------------------------------------------------------------
+# FUNCTION fromTxt()
+# ---------------------------------------------------------------------------
+def fromTxt(input : str) :
+  """
+  Creates and initialises an instruction object from a string
+
+  It parses the string, checks if the instruction exists, check if the syntax
+  is valid, retrieves the parameters.
+
+  Example: 
+  > instruction.fromTxt("NOP")
+  """
+
+  return instruction()
+
+
+
+
+
+# =============================================================================
+# UNIT TESTS
+# =============================================================================
+if (__name__ == "__main__") :
+
+  print("[INFO] Library 'instruction' called as main: running unit tests...")
+
+  I = fromTxt("MEET 1")

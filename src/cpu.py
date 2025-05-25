@@ -19,6 +19,13 @@
 
 
 # =============================================================================
+# EXTERNALS
+# =============================================================================
+import instruction
+
+
+
+# =============================================================================
 # CONSTANTS POOL
 # =============================================================================
 INSTRUCTION_MEM_SIZE = 1024
@@ -38,7 +45,7 @@ class cpu :
   def __init__(self) :
     
     # Program counter init
-    self.pc = 0 
+    self.PC = 0 
 
     # Instruction/data memory init
     self.iMem = ["NOP" for _ in range(INSTRUCTION_MEM_SIZE)]
@@ -51,33 +58,62 @@ class cpu :
     self.W = [0 for _ in range(N_WORK_REG)]
 
 
+    # Internal tools
+    self.nCyclesLost = 0
+
+
 
   # ---------------------------------------------------------------------------
   # METHOD cpu.step()
   # ---------------------------------------------------------------------------
   def step(self) :
     """
-    Reads the next instruction
+    Makes the CPU progress of 1 clock cycle.
     """
-
 
     # 1. For each instruction: do the task of the current cycle
     # 2. Read the new instruction, check its syntax and convert it to an 
     #    Instruction object
     # 3. Call its execution function
 
+    instr = instruction.fromTxt("NOP")
+
+
+    pass
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu.setPC()
+  # ---------------------------------------------------------------------------
+  def setPC(self) :
+    """
+    Sets the PC (program counter) to a specific spot.
+    Out of range values will call a hardware trap.
+    """
 
     pass
 
 
 
 
-# Example code for the instruction memory
-cpu0 = cpu()
-cpu0.IMem = [
-  "MOV 1,[0]",
-  "BSET W0,1",
-  "NOP",
-  "MEET 1"
-]
+# =============================================================================
+# UNIT TESTS
+# =============================================================================
+if (__name__ == "__main__") :
+
+  print("[INFO] Library 'cpu' called as main: running unit tests...")
+
+  # Example code for the instruction memory
+  cpu0 = cpu()
+  cpu0.IMem = [
+    "NOP",
+    "NOP",
+    "NOP",
+    "MOV 1,[0]",
+    "BSET W0,1",
+    "NOP",
+    "MEET 1",
+    "JE W0, W1",
+  ]
 
