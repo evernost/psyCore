@@ -36,7 +36,7 @@
 # CLASS DEFINITION
 # =============================================================================
 
-class instruction : 
+class Instruction : 
 
   """
   INSTRUCTION object.
@@ -50,7 +50,6 @@ class instruction :
 
   def __init__(self) :
     
-    
     # Clock cycles needed before the result is available
     self.latency = 1  
 
@@ -61,6 +60,9 @@ class instruction :
     # Internal parameters
     self._cyclesRemaining = self.latency
     self._normalisedCode = ""   # Normalised string version of the instruction (all caps, proper spacing etc.)
+
+    self._instructionSet = {}
+
 
 
   # ---------------------------------------------------------------------------
@@ -92,13 +94,36 @@ class instruction :
 
 
 
+  # ---------------------------------------------------------------------------
+  # DECORATOR instruction.register()
+  # ---------------------------------------------------------------------------
+  @classmethod
+  def register(cls, mnemonic: str) -> None :
+    def preProcessor(classInitFunc):
+      cls._instructionSet[mnemonic] = classInitFunc
+      return classInitFunc
+    return preProcessor
 
-# ---------------------------------------------------------------------------
+  # def execute(self, action_name):
+  #   if action_name in self._instructionSet :
+  #     return self._registry[action_name](self)
+  #   raise ValueError(f"Unknown action '{action_name}'")
+
+
+
+
+
+
+
+
+
+
+# -----------------------------------------------------------------------------
 # FUNCTION fromTxt()
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def fromTxt(input : str) :
   """
-  Creates and initialises an instruction object from a string
+  Creates and initialises an instruction object from a string (factory function)
 
   It parses the string, checks if the instruction exists, check if the syntax
   is valid, retrieves the parameters.
@@ -107,7 +132,57 @@ def fromTxt(input : str) :
   > instruction.fromTxt("NOP")
   """
 
-  return instruction()
+  # Extract the mnemonic
+  #mnemonic = getMnemonic(input)
+  mnemonic = "NOP"
+
+  # Create the instruction
+  instruction = Instruction()
+
+  # Initialise the instruction object based on the mnemonic
+  if mnemonic in instructionSet :
+    instructionSet[mnemonic](instruction)
+  else:
+    raise ValueError(f"Invalid instruction: {input}")
+  
+  return instruction
+  
+  
+
+# =============================================================================
+# INSTRUCTION SET DEFINITION
+# =============================================================================
+
+instructionSet = {}
+
+def register(mnemonic: str) :
+  def decorateur(mnemoInitFunc) :
+    instructionSet[mnemonic] = mnemoInitFunc
+    return mnemoInitFunc
+  return decorateur
+
+
+# -----------------------------------------------------------------------------
+# INSTRUCTION: "NOP"
+# -----------------------------------------------------------------------------
+@register("NOP")
+def __instr_NOP(instruction) :
+  instruction.latency = 1
+  
+  # Decode arguments
+  # ...
+
+ 
+
+
+
+# ---------------------------------------------------------------------------
+# INSTRUCTION: "JZ"
+# ---------------------------------------------------------------------------
+@register("JZ")
+def __instr_JZ(instruction) :
+  
+  pass
 
 
 
