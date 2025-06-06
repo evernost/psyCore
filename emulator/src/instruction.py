@@ -41,24 +41,33 @@ class Instruction :
   """
   INSTRUCTION object.
   
-  The Instruction object is an abstraction for an actual CPU instruction.
-  It describes the actual task carried out by the instruction and provides 
-  some useful information like:
+  The Instruction object is an abstraction for a CPU instruction.
+  It describes the task carried out by the instruction and provides some 
+  useful information like:
   - number of clock cycles needed
   - registers 
+
+  It keeps track of the context for instructions that need more than one 
+  clock cycle to be done.
+
+  Usually, the instruction object is destroyed once its execution is done.
   """
 
   def __init__(self) :
     
     # Clock cycles needed before the result is available
-    self.latency = 1  
+    self.cycles = 1  
 
     # Reference to the CPU instance.
     # An instruction has full control over the internal attributes of the CPU.
     self.cpu = None
 
+    # Arguments (populated )
+    self.nArgs = 0
+    self.args = {}
+
     # Internal parameters
-    self._cyclesRemaining = self.latency
+    self._cyclesRemaining = self.cycles
     self._normalisedCode = ""   # Normalised string version of the instruction (all caps, proper spacing etc.)
 
     self._instructionSet = {}
@@ -167,12 +176,14 @@ def register(mnemonic: str) :
 # -----------------------------------------------------------------------------
 @register("NOP")
 def __instr_NOP(instruction) :
-  instruction.latency = 1
   
-  # Decode arguments
-  # ...
-
- 
+  # Number of clock cycles required to carry out the instruction
+  instruction.cycles = 1
+  
+  # Past this point, 'Instruction.args' and 'Instruction.nArgs' are 
+  # ready to be used by the instruction
+  if (instruction._cyclesRemaining > 0) :
+    pass
 
 
 

@@ -42,6 +42,12 @@ N_WORK_REG = 16
 # =============================================================================
 class cpu :
 
+  """
+  CPU object.
+  
+  The CPU object is an abstraction for the CPU internal machinery.
+  """
+
   def __init__(self) :
     
     # Program counter init
@@ -49,14 +55,17 @@ class cpu :
 
     # Instruction/data memory init
     self.iMem = ["NOP" for _ in range(INSTRUCTION_MEM_SIZE)]
-    self.dMem = ["NOP" for _ in range(DATA_MEM_SIZE)]
+    self.dMem = [0 for _ in range(DATA_MEM_SIZE)]
 
     # Instruction pipeline init
-    self.pipeline = []
+    #self.pipeline = []
 
     # Work registers init
     self.W = [0 for _ in range(N_WORK_REG)]
 
+    # Stack 
+    # TODO: create a stack object?
+    self.stack = []
 
     # Internal tools
     self.nCyclesLost = 0
