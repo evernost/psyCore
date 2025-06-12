@@ -4,7 +4,7 @@
 # Module name     : instruction
 # File name       : instruction.py
 # File type       : Python script (Python 3.10 or higher)
-# Purpose         : 
+# Purpose         : class definition for the 'Instruction' object
 # Author          : QuBi (nitrogenium@outlook.fr)
 # Creation date   : May 22nd, 2025
 # -----------------------------------------------------------------------------
@@ -36,6 +36,80 @@
 # CLASS DEFINITION
 # =============================================================================
 
+
+def registerInstructionSet(cls) :
+  """
+  Registration decorator to declare all the supported instructions.
+  Add the code for your custom instructions here.
+  """
+
+  # ---------------------------------------------------------------------------
+  # INSTRUCTION: "NOP"
+  # ---------------------------------------------------------------------------
+  def __instr_NOP(self) :
+    
+    # Number of clock cycles required for the instruction to be completed.
+    # Might depend on the instruction's arguments.
+    self.cycles = 1
+
+    if (self.__cyclesRemaining > 0) :
+      pass
+
+  # Register the instruction
+  cls.__instr_NOP = __instr_NOP
+
+
+
+  # ---------------------------------------------------------------------------
+  # INSTRUCTION: "JZ"
+  # ---------------------------------------------------------------------------
+  def __instr_JZ(self) :
+    
+    # Number of clock cycles required for the instruction to be completed.
+    # Might depend on the instruction's arguments.
+    self.cycles = 1
+
+    if (self.__cyclesRemaining > 0) :
+      pass
+
+  # Register the instruction
+  cls.__instr_JZ = __instr_JZ
+
+
+
+  # ---------------------------------------------------------------------------
+  # INSTRUCTION: "MOV"
+  # ---------------------------------------------------------------------------
+  def __instr_MOV(self) :
+    
+    # Instruction identifier
+    # NOTE: the same function processes all variants of the instruction
+    # - MOV number, Wx
+    # - MOV Wx, Wy
+    # etc.
+    self.mnemonic = "MOV"
+
+    # Number of clock cycles required for the instruction to be completed.
+    # Might depend on the instruction's arguments.
+    self.cycles = 1
+
+    if (self.__cyclesRemaining > 0) :
+      pass
+
+  # Register the instruction
+  cls.__instr_MOV = __instr_MOV
+
+
+
+  return cls
+
+
+
+
+
+
+
+@registerInstructionSet
 class Instruction : 
 
   """
@@ -58,11 +132,13 @@ class Instruction :
     # Clock cycles needed before the result is available
     self.cycles = 1  
 
-    # Reference to the CPU instance.
+    # Reference to the CPU instances.
     # An instruction has full control over the internal attributes of the CPU.
-    self.cpu = None
+    # There can be more than 1 CPU running simultenously.
+    self.nCores = 1
+    self.cpu = [None for _ in range(self.nCores)]
 
-    # Arguments (populated )
+    # Arguments (populated after the specific instruction method)
     self.nArgs = 0
     self.args = {}
 
@@ -103,25 +179,6 @@ class Instruction :
 
 
 
-  # ---------------------------------------------------------------------------
-  # DECORATOR instruction.register()
-  # ---------------------------------------------------------------------------
-  @classmethod
-  def register(cls, mnemonic: str) -> None :
-    def preProcessor(classInitFunc):
-      cls._instructionSet[mnemonic] = classInitFunc
-      return classInitFunc
-    return preProcessor
-
-  # def execute(self, action_name):
-  #   if action_name in self._instructionSet :
-  #     return self._registry[action_name](self)
-  #   raise ValueError(f"Unknown action '{action_name}'")
-
-
-
-
-
 
 
 
@@ -132,13 +189,23 @@ class Instruction :
 # -----------------------------------------------------------------------------
 def fromTxt(input : str) :
   """
-  Creates and initialises an instruction object from a string (factory function)
+  FACTORY FUNCTION (returns an Instruction object)
+  
+  Creates and initialises an instruction object from a string containing the raw
+  line of code.
+
+  It does the following:
+  - normalisation
+  - instruction parsing
+  - argument extraction 
+  - syntax check
 
   It parses the string, checks if the instruction exists, check if the syntax
   is valid, retrieves the parameters.
 
   Example: 
   > instruction.fromTxt("NOP")
+  > instruction.fromTxt("nop ")
   """
 
   # Extract the mnemonic
@@ -161,42 +228,6 @@ def fromTxt(input : str) :
 # =============================================================================
 # INSTRUCTION SET DEFINITION
 # =============================================================================
-
-instructionSet = {}
-
-def register(mnemonic: str) :
-  def decorateur(mnemoInitFunc) :
-    instructionSet[mnemonic] = mnemoInitFunc
-    return mnemoInitFunc
-  return decorateur
-
-
-# -----------------------------------------------------------------------------
-# INSTRUCTION: "NOP"
-# -----------------------------------------------------------------------------
-@register("NOP")
-def __instr_NOP(instruction) :
-  
-  # Number of clock cycles required to carry out the instruction
-  instruction.cycles = 1
-  
-  # Past this point, 'Instruction.args' and 'Instruction.nArgs' are 
-  # ready to be used by the instruction
-  if (instruction._cyclesRemaining > 0) :
-    pass
-
-
-
-# ---------------------------------------------------------------------------
-# INSTRUCTION: "JZ"
-# ---------------------------------------------------------------------------
-@register("JZ")
-def __instr_JZ(instruction) :
-  
-  pass
-
-
-
 
 
 # =============================================================================
