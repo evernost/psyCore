@@ -57,8 +57,11 @@ class cpu :
     self.iMem = ["NOP" for _ in range(INSTRUCTION_MEM_SIZE)]
     self.dMem = [0 for _ in range(DATA_MEM_SIZE)]
 
-    # Instruction pipeline init
-    #self.pipeline = []
+    # Code structure
+    # - cpu.startAddr : first instruction address (read after reset)
+    # - cpu.itAddr    : interrupt handler address
+    self.startAddr = 0
+    self.itAddr = 1000 
 
     # Work registers init
     self.W = [0 for _ in range(N_WORK_REG)]
@@ -67,8 +70,29 @@ class cpu :
     # TODO: create a stack object?
     self.stack = []
 
-    # Internal tools
+    # Stats: number of cycles lost
     self.nCyclesLost = 0
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu.loadFromFile()                                         [PRIVATE]
+  # ---------------------------------------------------------------------------
+  def loadFromFile(self, asmFile: str) :
+    """
+    Initialises the program memory with assembly code from a text file.
+    
+    By default, the first instruction in the file is written at 'cpu.startAddr'.
+    Consecutive instructions are stored at contiguous addresses in program
+    memory.
+    
+    Instructions can be prefixed with the address of their location in program
+    memory. 
+
+    Uninitialised addresses are set to "NOP".
+    """
+
+    pass
 
 
 
@@ -87,22 +111,20 @@ class cpu :
 
     instr = instruction.fromTxt("NOP")
 
-
     pass
 
 
 
   # ---------------------------------------------------------------------------
-  # METHOD cpu.setPC()
+  # METHOD cpu._setPC()                                               [PRIVATE]
   # ---------------------------------------------------------------------------
-  def setPC(self) :
+  def _setPC(self) :
     """
     Sets the PC (program counter) to a specific spot.
     Out of range values will call a hardware trap.
     """
 
     pass
-
 
 
 
@@ -115,7 +137,7 @@ if (__name__ == "__main__") :
 
   # Example code for the instruction memory
   cpu0 = cpu()
-  cpu0.IMem = [
+  cpu0.iMem = [
     "NOP",
     "NOP",
     "NOP",
