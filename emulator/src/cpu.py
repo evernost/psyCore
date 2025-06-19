@@ -90,9 +90,18 @@ class cpu :
     memory. 
 
     Uninitialised addresses are set to "NOP".
+
+    'asmFile' must be the full path to the text file.
     """
 
-    pass
+    try : 
+      with open(asmFile, "r") as fileHandler :
+        for line in fileHandler :
+          I = instruction.Instruction(line.strip())
+
+
+    except FileNotFoundError:
+      print(f"[ERROR] cpu.loadFromFile: input file could not be found: '{asmFile}'.")
 
 
 

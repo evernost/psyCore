@@ -53,6 +53,7 @@ class Instruction :
     # Populated after a Instruction._decode()
     self.handler = None
     self.mnemonic = ""
+    self.addr = 0
 
     # Reference to the CPU instances.
     # An instruction has full control over the internal attributes of the CPU.
@@ -72,26 +73,31 @@ class Instruction :
     # Declare the instruction set recognized by the CPU.
     # Instructions must be declared in the dictionary as a pair:
     # - key   : mnemonic (string)
-    # - value : pointer to the handler function 
+    # - value : pointer to the custom init function 
+    # These functions are like extensions of the original __init__() method.
     self._instructionSet = {
       # Data transfer 
-      "MOV"   : self.__instr_MOV,
+      "MOV"   : self.__init_MOV,
       
       # Conditions
-      "JZ"    : self.__instr_JZ,
+      "JZ"    : self.__init_JZ,
       
       # Context save/restore
-      "SCTX"  : self.__instr_SCTX,
-      "RCTX"  : self.__instr_RCTX,
+      "SCTX"  : self.__init_SCTX,
+      "RCTX"  : self.__init_RCTX,
 
       # Synchronisation (multi-CPU context)
-      "LOC"   : self.__instr_LOC,
-      "MEET"  : self.__instr_MEET,
+      "LOC"   : self.__init_LOC,
+      "MEET"  : self.__init_MEET,
       
       # Hardware instructions
-      "NOP"   : self.__instr_NOP,
-      "RESET" : self.__instr_RESET
+      "NOP"   : self.__init_NOP,
+      "RESET" : self.__init_RESET
     }
+
+    # Try to decode the instruction
+    # (possible now that the instruction has context)
+    self._decode(text)
 
 
 
@@ -107,9 +113,10 @@ class Instruction :
     It does the following:
     - normalisation
     - instruction parsing
-    - argument extraction 
+    - address extraction (if any)
+    - argument extraction (if any) 
     - syntax check
-
+    
     It parses the string, checks if the instruction exists, check if the syntax
     is valid, retrieves the parameters.
 
@@ -158,8 +165,7 @@ class Instruction :
   # ---------------------------------------------------------------------------
   # INSTRUCTION: "NOP"
   # ---------------------------------------------------------------------------
-  def __instr_NOP(self) :
-
+  def __init_NOP(self) :
     """
     NOP (No OPeration)
 
@@ -167,40 +173,44 @@ class Instruction :
     Registers are reset.
     """
     
-    # TODO: this cannot be here.
-    # A whole function dedicated to init is required
+    # Instruction properties
+    self.mnemonic = "MOV"
+    self.handler = self.__instr_NOP
+
     self.cycles = 1
-
-    if (self.__cyclesRemaining > 0) :
-      pass
-
-
+    self.nArgs = 0
+  
+  def __instr_NOP(self) :
+    pass
+ 
 
 
   # ---------------------------------------------------------------------------
   # INSTRUCTION: "JZ"
   # ---------------------------------------------------------------------------
-  def __instr_JZ(self) :
+  def __init_JZ(self) :
     """
     JZ (Jump if Zero)
 
     Description is TODO.
     """
 
-    self.cycles = 1
+    # Instruction properties
+    self.mnemonic = "JZ"
+    self.handler = self.__instr_JZ
 
-    if (self.__cyclesRemaining > 0) :
-      pass
+    self.cycles = 2
+    self.nArgs = 0
 
-  # Register the instruction
-  cls.__instr_JZ = __instr_JZ
+  def __instr_JZ(self) :
+    pass
 
 
 
   # ---------------------------------------------------------------------------
   # INSTRUCTION: "MOV"
   # ---------------------------------------------------------------------------
-  def __instr_MOV(self) :
+  def __init_MOV(self) :
     
     # Instruction identifier
     # NOTE: the same function processes all variants of the instruction
@@ -208,13 +218,13 @@ class Instruction :
     # - MOV Wx, Wy
     # etc.
     self.mnemonic = "MOV"
+    self.handler = self.__instr_MOV
 
-    # Number of clock cycles required for the instruction to be completed.
-    # Might depend on the instruction's arguments.
-    self.cycles = 1
+    self.cycles = 2
+    self.nArgs = 0
 
-    if (self.__cyclesRemaining > 0) :
-      pass
+  def __instr_MOV(self) :
+    pass
 
 
 
