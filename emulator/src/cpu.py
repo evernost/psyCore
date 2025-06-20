@@ -125,7 +125,7 @@ class cpu :
 
 
   # ---------------------------------------------------------------------------
-  # METHOD cpu._setPC()                                               [PRIVATE]
+  # METHOD cpu._pcSet()                                               [PRIVATE]
   # ---------------------------------------------------------------------------
   def _setPC(self) :
     """
@@ -134,6 +134,38 @@ class cpu :
     """
 
     pass
+
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu._pcJump()                                              [PRIVATE]
+  # ---------------------------------------------------------------------------
+  def _pcJump(self, delta) :
+    """
+    Does a relative jump on the PC (positive or negative)
+    Out of range values will call a hardware trap.
+    """
+
+    pass
+
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu.__trap_pcOutOfRange()                                  [PRIVATE]
+  # ---------------------------------------------------------------------------
+  def __trap_pcOutOfRange(self) :
+    """
+    CPU trap: PC out of range.
+    This function is called when the PC is requested to go beyond the program
+    memory.
+    """
+
+    pass
+
+
+
 
 
 

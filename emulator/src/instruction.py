@@ -34,10 +34,11 @@ class Instruction :
   INSTRUCTION object.
   
   The Instruction object is an abstraction for a CPU instruction.
-  It describes the task carried out by the instruction and provides some 
+  It describes the task carried out by the instruction and keeps track of some 
   useful information like:
+  - address of the instruction
   - number of clock cycles needed
-  - registers 
+  - modified registers
 
   It keeps track of the context for instructions that need more than one 
   clock cycle to be done.
@@ -68,8 +69,7 @@ class Instruction :
 
     # Internal parameters
     self._cyclesRemaining = self.cycles
-    self._normalisedCode = ""   # Normalised string version of the instruction (all caps, proper spacing etc.)
-
+    
     # Declare the instruction set recognized by the CPU.
     # Instructions must be declared in the dictionary as a pair:
     # - key   : mnemonic (string)
@@ -77,26 +77,36 @@ class Instruction :
     # These functions are like extensions of the original __init__() method.
     self._instructionSet = {
       # Data transfer 
-      "MOV"   : self.__init_MOV,
+      "MOV"     : self.__init_MOV,
       
-      # Conditions
-      "JZ"    : self.__init_JZ,
+      # Branch
+      "JZ"      : self.__init_JZ,
+      "REPEAT"  : self.__init_REPEAT,
       
+      # Math
+      "ADD"     : self.__init_ADD,
+      "SUB"     : self.__init_SUB,
+
       # Context save/restore
-      "SCTX"  : self.__init_SCTX,
-      "RCTX"  : self.__init_RCTX,
+      "SCTX"    : self.__init_SCTX,
+      "RCTX"    : self.__init_RCTX,
 
       # Synchronisation (multi-CPU context)
-      "LOC"   : self.__init_LOC,
-      "MEET"  : self.__init_MEET,
+      "LOC"     : self.__init_LOC,
+      "MEET"    : self.__init_MEET,
       
       # Hardware instructions
-      "NOP"   : self.__init_NOP,
-      "RESET" : self.__init_RESET
+      "NOP"     : self.__init_NOP,
+      "RESET"   : self.__init_RESET
     }
 
-    # Try to decode the instruction
-    # (possible now that the instruction has context)
+    # Normalised string version of the instruction (all caps, proper spacing etc.)
+    # Populated after 'Instruction._decode()'
+    self._normalisedCode = ""
+
+    # Try to decode the instruction.
+    # The specific init function for the instruction is identified, 
+    # which makes decoding possible.
     self._decode(text)
 
 
@@ -168,9 +178,14 @@ class Instruction :
   def __init_NOP(self) :
     """
     NOP (No OPeration)
-
     Does nothing for 1 clock cycle.
-    Registers are reset.
+
+    Arguments: none
+
+    Behaviour:
+    - STAT reg  : reset
+    - W_XX regs : -
+    - PC        : +1
     """
     
     # Instruction properties
@@ -181,7 +196,7 @@ class Instruction :
     self.nArgs = 0
   
   def __instr_NOP(self) :
-    pass
+    self.cpu[self.cpuID]._setPC()
  
 
 
@@ -192,7 +207,9 @@ class Instruction :
     """
     JZ (Jump if Zero)
 
-    Description is TODO.
+    - Status reg: reset
+    - Work reg  : unchanged
+    - PC        : +1
     """
 
     # Instruction properties
@@ -205,6 +222,34 @@ class Instruction :
   def __instr_JZ(self) :
     pass
 
+
+
+
+  # ---------------------------------------------------------------------------
+  # INSTRUCTION: "REPEAT"
+  # ---------------------------------------------------------------------------
+  def __init_REPEAT(self) :
+    """
+    REPEAT #N
+    Repeats the next instruction N times.
+
+    Arguments: none
+
+    Behaviour:
+    - STAT reg  : -
+    - W_XX regs : -
+    - PC        : -
+    """
+    
+    # Instruction properties
+    self.mnemonic = "REPEAT"
+    self.handler = self.__instr_REPEAT
+
+    self.cycles = 1
+    self.nArgs = 0
+  
+  def __instr_REPEAT(self) :
+    pass
 
 
   # ---------------------------------------------------------------------------
