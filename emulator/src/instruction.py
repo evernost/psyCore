@@ -81,6 +81,7 @@ class Instruction :
       
       # Branch
       "JZ"      : self.__init_JZ,
+      "JE"      : self.__init_JE,
       "REPEAT"  : self.__init_REPEAT,
       
       # Math
@@ -137,21 +138,6 @@ class Instruction :
     
     pass
 
-    # # Extract the mnemonic
-    # #mnemonic = getMnemonic(input)
-    # mnemonic = "NOP"
-
-    # # Create the instruction
-    # instruction = Instruction()
-
-    # # Initialise the instruction object based on the mnemonic
-    # if mnemonic in instructionSet :
-    #   instructionSet[mnemonic](instruction)
-    # else:
-    #   raise ValueError(f"Invalid instruction: {input}")
-    
-    # return instruction
-
 
 
   # ---------------------------------------------------------------------------
@@ -184,7 +170,7 @@ class Instruction :
 
     Behaviour:
     - STAT reg  : reset
-    - W_XX regs : -
+    - W_XX regs : unchanged
     - PC        : +1
     """
     
@@ -206,10 +192,14 @@ class Instruction :
   def __init_JZ(self) :
     """
     JZ (Jump if Zero)
+    Description is TODO
 
-    - Status reg: reset
-    - Work reg  : unchanged
-    - PC        : +1
+    Arguments: TODO
+
+    Behaviour:
+    - STAT reg  : TODO
+    - W_XX regs : TODO
+    - PC        : TODO
     """
 
     # Instruction properties
@@ -224,6 +214,32 @@ class Instruction :
 
 
 
+  # ---------------------------------------------------------------------------
+  # INSTRUCTION: "JE"
+  # ---------------------------------------------------------------------------
+  def __init_JE(self) :
+    """
+    JE (Jump if Equal)
+    Description is TODO
+
+    Arguments: TODO
+
+    Behaviour:
+    - STAT reg  : TODO
+    - W_XX regs : TODO
+    - PC        : TODO
+    """
+
+    # Instruction properties
+    self.mnemonic = "JE"
+    self.handler = self.__instr_JE
+
+    self.cycles = 2
+    self.nArgs = 0
+
+  def __instr_JE(self) :
+    pass
+
 
   # ---------------------------------------------------------------------------
   # INSTRUCTION: "REPEAT"
@@ -236,9 +252,9 @@ class Instruction :
     Arguments: none
 
     Behaviour:
-    - STAT reg  : -
-    - W_XX regs : -
-    - PC        : -
+    - STAT reg  : TODO
+    - W_XX regs : TODO
+    - PC        : TODO
     """
     
     # Instruction properties
@@ -270,6 +286,24 @@ class Instruction :
 
   def __instr_MOV(self) :
     pass
+
+
+
+# -----------------------------------------------------------------------------
+# FUNCTION fromStr
+# -----------------------------------------------------------------------------
+def fromStr(self, text: str) :
+  """
+  Factory function
+
+  Creates an instruction object from a string containing the mnemonic and 
+  the arguments.
+
+  It is essentially a shorthand notation to avoid doing things like 
+  instruction.Instruction(...) which are not very handy.
+  """
+  
+  return Instruction(text)
 
 
 

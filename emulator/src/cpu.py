@@ -97,7 +97,7 @@ class cpu :
     try : 
       with open(asmFile, "r") as fileHandler :
         for line in fileHandler :
-          I = instruction.Instruction(line.strip())
+          I = instruction.fromStr(line.strip())
 
 
     except FileNotFoundError:
@@ -118,23 +118,26 @@ class cpu :
     #    Instruction object
     # 3. Call its execution function
 
-    instr = instruction.fromTxt("NOP")
+    instr = instruction.fromStr("NOP")
 
     pass
 
 
 
   # ---------------------------------------------------------------------------
-  # METHOD cpu._pcSet()                                               [PRIVATE]
+  # METHOD cpu._setPC()                                               [PRIVATE]
   # ---------------------------------------------------------------------------
-  def _setPC(self) :
+  def _setPC(self, newPC) :
     """
     Sets the PC (program counter) to a specific spot.
     Out of range values will call a hardware trap.
     """
 
-    pass
+    if ((newPC < 0) or (newPC >= DATA_MEM_SIZE)) :
+      self.__trap_pcOutOfRange()
 
+    else :
+      self.PC = newPC
 
 
 
@@ -147,8 +150,7 @@ class cpu :
     Out of range values will call a hardware trap.
     """
 
-    pass
-
+    self._setPC(self.PC + delta)
 
 
 
@@ -162,10 +164,7 @@ class cpu :
     memory.
     """
 
-    pass
-
-
-
+    print("[ERROR] Reached hardware trap: PC is out of range. Simulation halted")
 
 
 
