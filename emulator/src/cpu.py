@@ -12,13 +12,6 @@
 # =============================================================================
 
 # =============================================================================
-# DESCRIPTION
-# =============================================================================
-# Description is TODO.
-
-
-
-# =============================================================================
 # EXTERNALS
 # =============================================================================
 import instruction
@@ -66,12 +59,18 @@ class cpu :
     # Work registers init
     self.W = [0 for _ in range(N_WORK_REG)]
 
+    # Status
+    self.statReg = 0
+    self.isTrapped = False
+
     # Stack 
     # TODO: create a stack object?
     self.stack = []
 
     # Stats: number of cycles lost
     self.nCyclesLost = 0
+
+
 
 
 
@@ -102,6 +101,21 @@ class cpu :
 
     except FileNotFoundError:
       print(f"[ERROR] cpu.loadFromFile: input file could not be found: '{asmFile}'.")
+
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu.reset()
+  # ---------------------------------------------------------------------------
+  def reset(self) :
+    """
+    Emulates a hardware reset on the CPU.
+    """
+
+    self.PC = self.startAddr
+    self.W = [0 for _ in range(N_WORK_REG)]
+    self.stack = []
 
 
 
@@ -164,6 +178,7 @@ class cpu :
     memory.
     """
 
+    self.isTrapped = True
     print("[ERROR] Reached hardware trap: PC is out of range. Simulation halted")
 
 
@@ -177,6 +192,7 @@ if (__name__ == "__main__") :
 
   # Example code for the instruction memory
   cpu0 = cpu()
+  cpu0.reset()
   cpu0.iMem = [
     "NOP",
     "NOP",

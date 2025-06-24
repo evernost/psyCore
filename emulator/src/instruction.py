@@ -52,8 +52,8 @@ class Instruction :
     self.cycles = 1  
 
     # Populated after a Instruction._decode()
-    self.handler = None
     self.mnemonic = ""
+    self.handler = None
     self.addr = 0
 
     # Reference to the CPU instances.
@@ -131,11 +131,19 @@ class Instruction :
     It parses the string, checks if the instruction exists, check if the syntax
     is valid, retrieves the parameters.
 
-    Example: 
-    > instruction.fromTxt("NOP")
-    > instruction.fromTxt("nop ")
+    If parsing fails, the object's attributes are left to their default 
+    state (empty)
     """
     
+    # Detect invalid characters
+    testAlpha = False
+    testAlpha = testAlpha or ((ord(char) >= ord("A")) and (ord(char) <= ord("Z")))
+    testAlpha = testAlpha or ((ord(char) >= ord("a")) and (ord(char) <= ord("z")))
+    testDigit = (ord(char) >= ord("0")) and (ord(char) <= ord("9"))
+
+  
+
+
     pass
 
 
@@ -220,7 +228,8 @@ class Instruction :
   def __init_JE(self) :
     """
     JE (Jump if Equal)
-    Description is TODO
+    Skips the next instruction if the content of 2 work registers is 
+    identical.
 
     Arguments: TODO
 
@@ -303,7 +312,13 @@ def fromStr(self, text: str) :
   instruction.Instruction(...) which are not very handy.
   """
   
-  return Instruction(text)
+  # Try to decode
+  I = Instruction(text)
+
+  if (I.mnemonic == "") :
+    return None
+  else :
+    return Instruction(text)
 
 
 
