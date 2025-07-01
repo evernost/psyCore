@@ -102,12 +102,10 @@ class Instruction :
     }
 
     # Normalised string version of the instruction (all caps, proper spacing etc.)
-    # Populated after 'Instruction._decode()'
+    # Populated after 'Instruction._decode()'.
     self._normalisedCode = ""
 
-    # Try to decode the instruction.
-    # The specific init function for the instruction is identified, 
-    # which makes decoding possible.
+    # Try to decode the instruction
     self._decode(text)
 
 
@@ -115,36 +113,82 @@ class Instruction :
   # ---------------------------------------------------------------------------
   # METHOD instruction._decode()
   # ---------------------------------------------------------------------------
-  def _decode(self, text: str) -> None :
+  def _decode(self, text: str) -> bool :
     """
-    Reads a line of code (as string) check the syntax and initialises the 
-    object's attributes based on the decoded instruction
+    Reads a line of code (as string) checks the syntax and initialises the 
+    object's attributes based on the decoded content.
 
-    
     It does the following:
-    - normalisation
+    - normalisation (uniform caps, remove useless whitespaces etc.)
     - instruction parsing
+    - syntax check
     - address extraction (if any)
     - argument extraction (if any) 
-    - syntax check
     
-    It parses the string, checks if the instruction exists, check if the syntax
-    is valid, retrieves the parameters.
+    If the parsing fails, the object's attributes are left to their default 
+    state (empty) so that the CPU can detect an exception.
 
-    If parsing fails, the object's attributes are left to their default 
-    state (empty)
+    Valid characters in the text file:
+    - alphanumeric    : a-z, A-Z, 0-9
+    - comma           : ,
+    - round brackets  : ()
+    - square brackets : []
+    - underscore      : _
+    - whitespace
+    - carriage return / line feed
+
+    Capitalisation is ignored.
+    Multiple whitespaces are ignored
+
+    Returns True if parsing succeeded.
     """
     
     # Detect invalid characters
-    testAlpha = False
-    testAlpha = testAlpha or ((ord(char) >= ord("A")) and (ord(char) <= ord("Z")))
-    testAlpha = testAlpha or ((ord(char) >= ord("a")) and (ord(char) <= ord("z")))
-    testDigit = (ord(char) >= ord("0")) and (ord(char) <= ord("9"))
+    for (loc, char) in enumerate(self.input) :
+      isAlpha       = self._decodeIsAlpha(char)
+      isDigit       = self._decodeIsDigit(char)
+      isOthers      = (char in ["[", "]", "(", ")", "_", ","])
+      
+      if not(isAlpha or isDigit or isOthers) :
+        print("[ERROR] This character is not supported by the parser.")
+        return False
+    
+    
+    
+ 
 
-  
+  # ---------------------------------------------------------------------------
+  # METHOD instruction._decodeIsAlpha()
+  # ---------------------------------------------------------------------------
+  def _decodeIsAlpha(self, s: str) -> bool :
+    """
+    Returns True if the first char of 's' is a letter.
+    Capitalisation is ignored.
+    """
+
+    # Keep the first char, ignore the rest.
+    char = s[0]
+
+    isAlpha = False
+    isAlpha = isAlpha or ((ord(char) >= ord("A")) and (ord(char) <= ord("Z")))
+    isAlpha = isAlpha or ((ord(char) >= ord("a")) and (ord(char) <= ord("z")))
+
+    return isAlpha
 
 
-    pass
+
+  # ---------------------------------------------------------------------------
+  # METHOD instruction._decodeIsDigit()
+  # ---------------------------------------------------------------------------
+  def _decodeIsDigit(self, s: str) -> bool :
+    """
+    Returns True if the first char of 's' is a digit.
+    """
+
+    # Keep the first char, ignore the rest.
+    char = s[0]
+
+    return (ord(char) >= ord("0")) and (ord(char) <= ord("9"))
 
 
 
