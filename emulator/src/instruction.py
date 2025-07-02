@@ -52,9 +52,9 @@ class Instruction :
     self.cycles = 1  
 
     # Populated after a Instruction._decode()
-    self.mnemonic = ""
-    self.handler = None
-    self.addr = 0
+    self.mnemonic = ""      # Normalised mnemonic of the instruction
+    self.handler  = None    # Pointer to the function carrying out the instruction task
+    self.addr     = 0       # Address of the instruction in program memory
 
     # Reference to the CPU instances.
     # An instruction has full control over the internal attributes of the CPU.
@@ -68,13 +68,14 @@ class Instruction :
     self.args = []
 
     # Internal parameters
+    self.size = 32  # Size of the instruction (bits)
     self._cyclesRemaining = self.cycles
     
-    # Declare the instruction set recognized by the CPU.
+    # Declare the instruction set supported by the CPU.
     # Instructions must be declared in the dictionary as a pair:
     # - key   : mnemonic (string)
     # - value : pointer to the custom init function 
-    # These functions are like extensions of the original __init__() method.
+    # These functions extend the __init__() method.
     self._instructionSet = {
       # Data transfer 
       "MOV"     : self.__init_MOV,

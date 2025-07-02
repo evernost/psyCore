@@ -21,12 +21,12 @@ import instruction
 # =============================================================================
 # CONSTANTS POOL
 # =============================================================================
-INSTRUCTION_MEM_SIZE = 1024
-DATA_MEM_SIZE = 1024
+INSTRUCTION_MEM_SIZE  = 1024    # Size of the instruction memory (in words)
+DATA_MEM_SIZE         = 1024    # Size of the data memory (in words)
 
 PIPELINE_SIZE = 5
 
-N_WORK_REG = 16
+N_WORK_REGS = 16                # Number of Work registers (W)
 
 
 
@@ -57,7 +57,7 @@ class cpu :
     self.itAddr = 1000 
 
     # Work registers init
-    self.W = [0 for _ in range(N_WORK_REG)]
+    self.W = [0 for _ in range(N_WORK_REGS)]
 
     # Status
     self.statReg = 0
@@ -72,10 +72,8 @@ class cpu :
 
 
 
-
-
   # ---------------------------------------------------------------------------
-  # METHOD cpu.loadFromFile()                                         [PRIVATE]
+  # METHOD cpu.loadFromFile()
   # ---------------------------------------------------------------------------
   def loadFromFile(self, asmFile: str) :
     """
@@ -90,17 +88,29 @@ class cpu :
 
     Uninitialised addresses are set to "NOP".
 
+    The loading operation generates an intermediate file where the address of
+    each instruction is explicited.
+    This is necessary since:
+    - in the input code, not all instructions have their address explicited
+    - labels are read once, but they impact the address of all the instructions
+      coming after.
+    - instruction address depends on the memory alignment, which is a setting 
+      known by the CPU only.
+    Therefore, the code must be treated as a whole before being actually decoded.
+
     'asmFile' must be the full path to the text file.
     """
 
     try : 
+      
+      # PREPROCESSING: generate an intermediate assembly file
       with open(asmFile, "r") as fileHandler :
         for line in fileHandler :
           I = instruction.fromStr(line.strip())
 
 
     except FileNotFoundError:
-      print(f"[ERROR] cpu.loadFromFile: input file could not be found: '{asmFile}'.")
+      print(f"[ERROR] cpu.loadFromFile(): input file could not be found: '{asmFile}'.")
 
 
 
@@ -113,9 +123,10 @@ class cpu :
     Emulates a hardware reset on the CPU.
     """
 
-    self.PC = self.startAddr
-    self.W = [0 for _ in range(N_WORK_REG)]
-    self.stack = []
+    self.PC         = self.startAddr
+    self.W          = [0 for _ in range(N_WORK_REGS)]
+    self.stack      = []
+    self.isTrapped  = False
 
 
 
@@ -147,11 +158,12 @@ class cpu :
     Out of range values will call a hardware trap.
     """
 
-    if ((newPC < 0) or (newPC >= DATA_MEM_SIZE)) :
-      self.__trap_pcOutOfRange()
+    if not(self.isTrapped) :
+      if ((newPC < 0) or (newPC >= DATA_MEM_SIZE)) :
+        self.__trap_pcOutOfRange()
 
-    else :
-      self.PC = newPC
+      else :
+        self.PC = newPC
 
 
 
