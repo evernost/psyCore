@@ -1,7 +1,10 @@
+; ======================
+; Demo file 1 (demo.asm)
+; ======================
 NOP 
 NOP
 nop    
-12: nop
+256: nop
 nop
 nop
 label1: MOV 0x55, W0 

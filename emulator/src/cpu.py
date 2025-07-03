@@ -103,9 +103,22 @@ class cpu :
 
     try : 
       
-      # PREPROCESSING: generate an intermediate assembly file
+      # PREPROCESSING: generate an intermediate assembly file with all addresses
+      # explicited
+      currAddr = self.startAddr
       with open(asmFile, "r") as fileHandler :
         for line in fileHandler :
+          
+          # Remove leading whitespaces
+          # ...
+
+          # Comment: ignore it
+          # ...
+
+          # Detect leading address
+          # ...
+          
+          
           I = instruction.fromStr(line.strip())
 
 
