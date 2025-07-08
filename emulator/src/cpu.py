@@ -15,6 +15,7 @@
 # EXTERNALS
 # =============================================================================
 import instruction
+import os
 
 
 
@@ -38,7 +39,7 @@ class cpu :
   """
   CPU object.
   
-  The CPU object is an abstraction for the CPU internal machinery.
+  The CPU object is an abstraction for the machinery of a single core CPU.
   """
 
   def __init__(self) :
@@ -51,9 +52,9 @@ class cpu :
     self.dMem = [0 for _ in range(DATA_MEM_SIZE)]
 
     # Code structure
-    # - cpu.startAddr : first instruction address (read after reset)
-    # - cpu.itAddr    : interrupt handler address
-    self.startAddr = 0
+    # - cpu.resetAddr : address of the first instruction read after CPU reset
+    # - cpu.itAddr    : address of the interrupt handler
+    self.resetAddr = 0
     self.itAddr = 1000 
 
     # Work registers init
@@ -65,9 +66,9 @@ class cpu :
 
     # Stack 
     # TODO: create a stack object?
-    self.stack = []
+    self.stack = None
 
-    # Stats: number of cycles lost
+    # CPU execution statistics
     self.nCyclesLost = 0
 
 
@@ -101,13 +102,18 @@ class cpu :
     'asmFile' must be the full path to the text file.
     """
 
-    try : 
+    asmFileIn       = asmFile
+    asmFileOutFull  = os.path.basename(asmFileIn)
+    (asmFileOut, _) = os.path.splitext(asmFileOutFull)
+    asmFileOut      = f"{asmFileIn}__processed.asm"
+
+    try :
       
       # PREPROCESSING: generate an intermediate assembly file with all addresses
       # explicited
-      currAddr = self.startAddr
-      with open(asmFile, "r") as fileHandler :
-        for line in fileHandler :
+      addr = self.resetAddr
+      with open(asmFileIn, "r") as fileHandleIn, open(asmFileOut, "w") as fileHandleOut :
+        for line in fileHandleIn :
           
           # Remove leading whitespaces
           # ...
@@ -125,6 +131,25 @@ class cpu :
     except FileNotFoundError:
       print(f"[ERROR] cpu.loadFromFile(): input file could not be found: '{asmFile}'.")
 
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu._asmReadRemoveSpaces()                                 [PRIVATE]
+  # ---------------------------------------------------------------------------
+  @staticmethod
+  def _asmReadRemoveSpaces(line: str) -> str :
+    """
+    Removes leading and redundant whitespaces in a line of ASM code. 
+    """
+
+    output = ""
+    emptyInput = True
+    for (i, c) in enumerate(line) :
+      if emptyInput :
+        if (c != " ") :
+          emptyInput = False
+          output += c.upper()
 
 
 
@@ -215,17 +240,10 @@ if (__name__ == "__main__") :
 
   print("[INFO] Library 'cpu' called as main: running unit tests...")
 
+  assert(cpu._asmReadRemoveSpaces("nop") == "NOP")
+  
   # Example code for the instruction memory
   cpu0 = cpu()
   cpu0.reset()
-  cpu0.iMem = [
-    "NOP",
-    "NOP",
-    "NOP",
-    "MOV 1,[0]",
-    "BSET W0,1",
-    "NOP",
-    "MEET 1",
-    "JE W0, W1",
-  ]
+  cpu0.loadFromFile("./demo.asm")
 
