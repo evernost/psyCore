@@ -4,7 +4,7 @@
 # Module name     : cpu
 # File name       : cpu.py
 # File type       : Python script (Python 3.10 or higher)
-# Purpose         : 
+# Purpose         : abstraction class for a single core custom CPU
 # Author          : QuBi (nitrogenium@outlook.fr)
 # Creation date   : May 22nd, 2025
 # -----------------------------------------------------------------------------
@@ -15,8 +15,11 @@
 # EXTERNALS
 # =============================================================================
 import instruction
-import os
+import stack
 
+# Standard libraries
+import os               # For path manipulations
+from enum import Enum   # For enumerated types in FSM
 
 
 # =============================================================================
@@ -66,7 +69,7 @@ class cpu :
 
     # Stack 
     # TODO: create a stack object?
-    self.stack = None
+    self.stack = stack.Stack()
 
     # CPU execution statistics
     self.nCyclesLost = 0
@@ -116,7 +119,7 @@ class cpu :
         for line in fileHandleIn :
           
           # Remove leading whitespaces
-          # ...
+          line = self._asmReadRemoveSpaces(line)
 
           # Comment: ignore it
           # ...
@@ -133,23 +136,54 @@ class cpu :
 
 
 
-
   # ---------------------------------------------------------------------------
-  # METHOD cpu._asmReadRemoveSpaces()                                 [PRIVATE]
+  # METHOD cpu._asmReadRemoveSpaces()                        [STATIC] [PRIVATE]
   # ---------------------------------------------------------------------------
   @staticmethod
   def _asmReadRemoveSpaces(line: str) -> str :
     """
-    Removes leading and redundant whitespaces in a line of ASM code. 
+    Removes useless/redundant whitespaces in a line of assembly code. 
+    Normalises the code to capital letters.
+
+    EXAMPLES
+    "   nop"        -> "NOP"
+    " noP   "       -> "NOP"
+    "MOV W1,   W2"  -> "MOV W1, W2"
+    
+    See unit tests in main() for more examples. 
     """
 
+    # Void input case
+    if (line == "") :
+      return ""
+  
+    class fsmState(Enum) :
+      INIT      = 0
+      MNEMONIC  = 1
+      ARG       = 2
+  
+    state     = fsmState.INIT
+    stateNext = fsmState.INIT
+  
     output = ""
-    emptyInput = True
     for (i, c) in enumerate(line) :
-      if emptyInput :
+      isLast = (i == (len(line)-1))
+      
+      if (state == fsmState.INIT) :
         if (c != " ") :
-          emptyInput = False
-          output += c.upper()
+          stateNext = fsmState.MNEMONIC
+
+      elif (state == fsmState.MNEMONIC) :
+        if (c == " ") :
+          stateNext = fsmState.ARG
+          output += c
+        else :
+          output += c
+
+      elif (state == fsmState.ARG) :
+        pass
+
+      state = stateNext
 
 
 
