@@ -149,8 +149,8 @@ class cpu :
     "   nop"        -> "NOP"
     " noP   "       -> "NOP"
     "MOV W1,   W2"  -> "MOV W1, W2"
-    
-    See unit tests in main() for more examples. 
+
+    See unit tests in main() for more examples.
     """
 
     # Void input case
@@ -166,24 +166,36 @@ class cpu :
     stateNext = fsmState.INIT
   
     output = ""
+    spaceQuota = 0
     for (i, c) in enumerate(line) :
       isLast = (i == (len(line)-1))
       
+      # State INIT
       if (state == fsmState.INIT) :
         if (c != " ") :
+          output += c
           stateNext = fsmState.MNEMONIC
 
-      elif (state == fsmState.MNEMONIC) :
-        if (c == " ") :
-          stateNext = fsmState.ARG
-          output += c
-        else :
-          output += c
 
+      # State MNEMONIC
+      elif (state == fsmState.MNEMONIC) :
+        output += c
+        if (c == " ") : stateNext = fsmState.ARG
+
+
+      # State ARG
       elif (state == fsmState.ARG) :
-        pass
+        if (c == ",") :
+          spaceQuota = 1
+          output += c
+        elif (c == " ") :
+          if (spaceQuota > 0) : output += c
+          spaceQuota -= 1
 
       state = stateNext
+
+    output = output.upper()
+    return output
 
 
 
@@ -274,7 +286,16 @@ if (__name__ == "__main__") :
 
   print("[INFO] Library 'cpu' called as main: running unit tests...")
 
-  assert(cpu._asmReadRemoveSpaces("nop") == "NOP")
+  assert(cpu._asmReadRemoveSpaces("nop")              == "NOP")               # Outputs are in capital letters (except for labels)
+  assert(cpu._asmReadRemoveSpaces("   nop")           == "NOP")               # Leading whitespaces are ignored
+  assert(cpu._asmReadRemoveSpaces(" noP   ")          == "NOP")               # Trailing whitespaces are ignored
+  assert(cpu._asmReadRemoveSpaces("MoV w1,   w2")     == "MOV W1, W2")        # Whitespaces in separators are normalised
+  assert(cpu._asmReadRemoveSpaces("MoV w4,w6")        == "MOV W4, W6")        # Ditto
+  assert(cpu._asmReadRemoveSpaces("moV w1,[ 0x240]")  == "MOV w1, [0x240]")   # Ditto
+  assert(cpu._asmReadRemoveSpaces("mov w1,,; w2")     == "MOV W1,,; W2")      # Note that the function does minimal syntax check.
+  assert(cpu._asmReadRemoveSpaces("")                 == "")                  # Odd input
+  assert(cpu._asmReadRemoveSpaces(" ")                == "")                  # Odd input
+  assert(cpu._asmReadRemoveSpaces("   ")              == "")                  # Odd input
   
   # Example code for the instruction memory
   cpu0 = cpu()
