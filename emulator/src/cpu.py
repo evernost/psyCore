@@ -161,6 +161,7 @@ class cpu :
       INIT      = 0
       MNEMONIC  = 1
       ARG       = 2
+      END       = 3
   
     state     = fsmState.INIT
     stateNext = fsmState.INIT
@@ -193,6 +194,17 @@ class cpu :
           spaceQuota -= 1
 
       state = stateNext
+
+    # Remove excessive trailing white spaces
+    for (i,c) in enumerate(output[::-1]) :
+      if (c != " ") :
+        iMax = len(output) - 1 - i
+        output = output[:(iMax+1)]
+        break
+
+
+
+    print()
 
     output = output.upper()
     return output
