@@ -1,8 +1,8 @@
 -- ============================================================================
 -- Project        : psyCore
 -- Module name    : psyCore_top
--- File type      : VHDL
 -- File name      : psyCore_top.vhd
+-- File type      : VHDL 2008
 -- Purpose        : top level of the psyCore CPU
 -- Author         : QuBi (nitrogenium@outlook.fr)
 -- Creation date  : May 30th, 2025
@@ -68,13 +68,13 @@ begin
   vesa_core_0 : entity psycore_lib.psycore_core(archDefault)
   generic map
   (
-    RESET_POL       => RESET_POL,
-    RESET_SYNC      => RESET_SYNC
+    RESET_POL   => RESET_POL,
+    RESET_SYNC  => RESET_SYNC
   )
   port map
   ( 
-    clock           => clock,
-    reset           => reset,
+    clock       => clock,
+    reset       => reset,
     
     someOtherSignal => '0'
   );

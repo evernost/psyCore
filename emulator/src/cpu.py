@@ -118,8 +118,8 @@ class cpu :
       with open(asmFileIn, "r") as fileHandleIn, open(asmFileOut, "w") as fileHandleOut :
         for line in fileHandleIn :
           
-          # Remove leading whitespaces
-          line = self._asmReadRemoveSpaces(line)
+          # Normalise the line of code
+          line = self._asmFormatLine(line)
 
           # Comment: ignore it
           # ...
@@ -137,20 +137,22 @@ class cpu :
 
 
   # ---------------------------------------------------------------------------
-  # METHOD cpu._asmReadRemoveSpaces()                        [STATIC] [PRIVATE]
+  # METHOD cpu._asmFormatLine()                              [STATIC] [PRIVATE]
   # ---------------------------------------------------------------------------
   @staticmethod
-  def _asmReadRemoveSpaces(line: str) -> str :
+  def _asmFormatLine(line: str) -> str :
     """
-    Removes useless/redundant whitespaces in a line of assembly code. 
-    Normalises the code to capital letters.
+    Normalises the line of instruction:
+    - removes useless/redundant whitespaces in a line of assembly code.
+    - enforce capital letters.
 
     EXAMPLES
     "   nop"        -> "NOP"
     " noP   "       -> "NOP"
     "MOV W1,   W2"  -> "MOV W1, W2"
-
     See unit tests in main() for more examples.
+
+    Function is declared as static so that unit tests can be run on it.
     """
 
     # Void input case
@@ -189,9 +191,15 @@ class cpu :
         if (c == ",") :
           spaceQuota = 1
           output += c
+          if not(isLast) :
+            if (line[i+1] != " ") :
+              output += " "
         elif (c == " ") :
-          if (spaceQuota > 0) : output += c
-          spaceQuota -= 1
+          if (spaceQuota > 0) : 
+            output += c
+            spaceQuota -= 1
+        else :
+          output += c
 
       state = stateNext
 
@@ -208,6 +216,29 @@ class cpu :
 
     output = output.upper()
     return output
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu._asmConsumeWhiteSpace()                       [STATIC] [PRIVATE]
+  # ---------------------------------------------------------------------------
+  @staticmethod
+  def _asmConsumeWhiteSpace(line: str) -> str :
+    """
+    Consumes the leading whitespace in a string (utility function)
+    Only the beginning of the string is affected.
+    The rest of the string remains untouched.
+
+    EXAMPLES
+    "   nop"    -> "nop"
+    "  "        -> ""
+    See unit tests in main() for more examples.
+
+    Function is declared as static so that unit tests can be run on it.
+    """
+
+    pass
+
 
 
 
@@ -298,16 +329,17 @@ if (__name__ == "__main__") :
 
   print("[INFO] Library 'cpu' called as main: running unit tests...")
 
-  assert(cpu._asmReadRemoveSpaces("nop")              == "NOP")               # Outputs are in capital letters (except for labels)
-  assert(cpu._asmReadRemoveSpaces("   nop")           == "NOP")               # Leading whitespaces are ignored
-  assert(cpu._asmReadRemoveSpaces(" noP   ")          == "NOP")               # Trailing whitespaces are ignored
-  assert(cpu._asmReadRemoveSpaces("MoV w1,   w2")     == "MOV W1, W2")        # Whitespaces in separators are normalised
-  assert(cpu._asmReadRemoveSpaces("MoV w4,w6")        == "MOV W4, W6")        # Ditto
-  assert(cpu._asmReadRemoveSpaces("moV w1,[ 0x240]")  == "MOV w1, [0x240]")   # Ditto
-  assert(cpu._asmReadRemoveSpaces("mov w1,,; w2")     == "MOV W1,,; W2")      # Note that the function does minimal syntax check.
-  assert(cpu._asmReadRemoveSpaces("")                 == "")                  # Odd input
-  assert(cpu._asmReadRemoveSpaces(" ")                == "")                  # Odd input
-  assert(cpu._asmReadRemoveSpaces("   ")              == "")                  # Odd input
+  assert(cpu._asmFormatLine("nop")                == "NOP")               # Outputs are in capital letters (except for labels)
+  assert(cpu._asmFormatLine("   nop")             == "NOP")               # Leading whitespaces are ignored
+  assert(cpu._asmFormatLine(" noP   ")            == "NOP")               # Trailing whitespaces are ignored
+  assert(cpu._asmFormatLine("MoV w1,   w2")       == "MOV W1, W2")        # Whitespaces in separators are normalised
+  assert(cpu._asmFormatLine("MoV w4,w6")          == "MOV W4, W6")        # Ditto
+  assert(cpu._asmFormatLine("moV w1,[ 0x240]")    == "MOV w1, [0x240]")   # Ditto
+  assert(cpu._asmFormatLine("moV w9, ( 0x240 )")  == "MOV w9, (0x240)")   # Same with parenthesis
+  assert(cpu._asmFormatLine("mov w1,,; w2")       == "MOV W1,,; W2")      # Note that the function does minimal syntax check.
+  assert(cpu._asmFormatLine("")                   == "")                  # Odd input
+  assert(cpu._asmFormatLine(" ")                  == "")                  # Odd input
+  assert(cpu._asmFormatLine("   ")                == "")                  # Odd input
   
   # Example code for the instruction memory
   cpu0 = cpu()
