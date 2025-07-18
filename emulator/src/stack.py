@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Project         : psyCore
-# Module name     : stack
-# File name       : stack.py
-# File type       : Python script (Python 3.10 or higher)
-# Purpose         : stack emulator
-# Author          : QuBi (nitrogenium@outlook.fr)
-# Creation date   : July 2nd, 2025
+# Project       : psyCore
+# Module name   : stack
+# File name     : stack.py
+# File type     : Python script (Python 3.10 or higher)
+# Purpose       : stack emulator
+# Author        : QuBi (nitrogenium@outlook.fr)
+# Creation date : July 2nd, 2025
 # -----------------------------------------------------------------------------
 # Best viewed with space indentation (2 spaces)
 # =============================================================================

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Project         : psyCore
-# Module name     : cpu
-# File name       : cpu.py
-# File type       : Python script (Python 3.10 or higher)
-# Purpose         : abstraction class for a single core custom CPU
-# Author          : QuBi (nitrogenium@outlook.fr)
-# Creation date   : May 22nd, 2025
+# Project       : psyCore
+# Module name   : cpu
+# File name     : cpu.py
+# File type     : Python script (Python 3.10 or higher)
+# Purpose       : abstraction class for a single core custom CPU
+# Author        : QuBi (nitrogenium@outlook.fr)
+# Creation date : May 22nd, 2025
 # -----------------------------------------------------------------------------
 # Best viewed with space indentation (2 spaces)
 # =============================================================================
@@ -14,12 +14,13 @@
 # =============================================================================
 # EXTERNALS
 # =============================================================================
+# Projet libraries
 import instruction
 import stack
 
 # Standard libraries
 import os               # For path manipulations
-from enum import Enum   # For enumerated types in FSM
+
 
 
 # =============================================================================
@@ -119,7 +120,7 @@ class cpu :
         for line in fileHandleIn :
           
           # Normalise the line of code
-          line = self._asmReaderFormatLine(line)
+          line = instruction.Instruction._asmReaderFormatLine(line)
 
           # Comment: ignore it
           # ...
@@ -137,130 +138,6 @@ class cpu :
 
 
   # ---------------------------------------------------------------------------
-  # METHOD cpu._asmReaderFormatLine()                        [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderFormatLine(line: str) -> str :
-    """
-    Normalises the line of instruction:
-    - removes useless/redundant whitespaces in a line of assembly code.
-    - enforce capital letters.
-
-    EXAMPLES
-    "   nop"        -> "NOP"
-    " noP   "       -> "NOP"
-    "MOV W1,   W2"  -> "MOV W1, W2"
-    See unit tests in main() for more examples.
-
-    Function is declared as static so that unit tests can be run on it.
-    """
-
-    # Void input case
-    if (line == "") :
-      return ""
-  
-    class fsmState(Enum) :
-      INIT      = 0
-      MNEMONIC  = 1
-      ARG       = 2
-      END       = 3
-  
-    state     = fsmState.INIT
-    stateNext = fsmState.INIT
-  
-    output = ""
-    spaceQuota = 0
-    for (i, c) in enumerate(line) :
-      isLast = (i == (len(line)-1))
-      
-      # State INIT
-      if (state == fsmState.INIT) :
-        if (c != " ") :
-          output += c
-          stateNext = fsmState.MNEMONIC
-
-
-      # State MNEMONIC
-      elif (state == fsmState.MNEMONIC) :
-        output += c
-        if (c == " ") : stateNext = fsmState.ARG
-
-
-      # State ARG
-      elif (state == fsmState.ARG) :
-        if (c == ",") :
-          spaceQuota = 1
-          output += c
-          if not(isLast) :
-            if (line[i+1] != " ") :
-              output += " "
-        elif (c == " ") :
-          if (spaceQuota > 0) : 
-            output += c
-            spaceQuota -= 1
-        else :
-          output += c
-
-      state = stateNext
-
-    # Remove excessive trailing white spaces
-    for (i,c) in enumerate(output[::-1]) :
-      if (c != " ") :
-        iMax = len(output) - 1 - i
-        output = output[:(iMax+1)]
-        break
-
-
-
-    print()
-
-    output = output.upper()
-    return output
-
-
-
-  # ---------------------------------------------------------------------------
-  # METHOD cpu._asmReaderConsumeSpace()                      [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderConsumeSpace(line: str) -> str :
-    """
-    Consumes the leading whitespace in a string (utility function)
-    Only the beginning of the string is affected.
-    The rest of the string remains untouched.
-
-    EXAMPLES
-    " 123 "   -> "123 "
-    "   nop"  -> "nop"
-    "  "      -> ""
-    See unit tests in main() for more examples.
-
-    Function is declared as static so that unit tests can be run on it.
-    """
-
-    # Empty input: empty output
-    if (line == "") : return line
-
-    # If it doesn't start with a space, there is nothing to trim
-    if (line[0] != " ") : return line
-
-    output = ""
-    isStillBlank = True
-    for c in line :
-      if isStillBlank :
-        if (c != " ") :
-          output += c
-          isStillBlank = False
-        else :
-          pass
-      else :
-        output += c
-
-    return output
-
-
-
-  # ---------------------------------------------------------------------------
   # METHOD cpu.reset()
   # ---------------------------------------------------------------------------
   def reset(self) :
@@ -268,7 +145,7 @@ class cpu :
     Emulates a hardware reset on the CPU.
     """
 
-    self.PC         = self.startAddr
+    self.PC         = self.resetAddr
     self.W          = [0 for _ in range(N_WORK_REGS)]
     self.stack      = []
     self.isTrapped  = False
@@ -345,27 +222,7 @@ class cpu :
 # =============================================================================
 if (__name__ == "__main__") :
 
-  print("[INFO] Library 'cpu' called as main: running unit tests...")
-
-  assert(cpu._asmReaderConsumeSpace("nop")      == "nop")
-  assert(cpu._asmReaderConsumeSpace(" nop")     == "nop")
-  assert(cpu._asmReaderConsumeSpace(" nop  ")   == "nop  ")
-  assert(cpu._asmReaderConsumeSpace(" ,123 ")   == ",123 ")
-  assert(cpu._asmReaderConsumeSpace("  ;456  ") == ";456  ")
-  print("- Unit test passed: 'cpu._asmReaderConsumeSpace()'")
-
-  assert(cpu._asmReaderFormatLine("nop")                == "NOP")               # Outputs are in capital letters (except for labels)
-  assert(cpu._asmReaderFormatLine("   nop")             == "NOP")               # Leading whitespaces are ignored
-  assert(cpu._asmReaderFormatLine(" noP   ")            == "NOP")               # Trailing whitespaces are ignored
-  assert(cpu._asmReaderFormatLine("MoV w1,   w2")       == "MOV W1, W2")        # Whitespaces in separators are normalised
-  assert(cpu._asmReaderFormatLine("MoV w4,w6")          == "MOV W4, W6")        # Ditto
-  assert(cpu._asmReaderFormatLine("moV w1,[ 0x240]")    == "MOV w1, [0x240]")   # Ditto
-  assert(cpu._asmReaderFormatLine("moV w9, ( 0x240 )")  == "MOV w9, (0x240)")   # Same with parenthesis
-  assert(cpu._asmReaderFormatLine("mov w1,,; w2")       == "MOV W1,,; W2")      # Note that the function does minimal syntax check.
-  assert(cpu._asmReaderFormatLine("")                   == "")                  # Odd input
-  assert(cpu._asmReaderFormatLine(" ")                  == "")                  # Odd input
-  assert(cpu._asmReaderFormatLine("   ")                == "")                  # Odd input
-  print("- Unit test passed: 'cpu._asmReaderFormatLine()'")
+  print("[INFO] Library 'cpu.py' called as main: running unit tests...")
   
   # Example code for the instruction memory
   cpu0 = cpu()
