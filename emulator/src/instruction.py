@@ -158,8 +158,113 @@ class Instruction :
         print("[ERROR] This character is not supported by the parser.")
         return False
     
-    
- 
+
+
+    # TODO:
+    # isValid = Instruction._asmReaderSyntaxCheck(line)
+
+    (address, label, mnemonic, args, comment) = Instruction._asmReaderParse(line)
+    line = Instruction._asmReaderFormatLine(line)
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD Instruction._asmReaderParse()                     [STATIC] [PRIVATE]
+  # ---------------------------------------------------------------------------
+  @staticmethod
+  def _asmReaderParse(line: str) :
+    """
+    Extracts the components of an assembly line of code.
+    The function returns:
+    - the label (if any)
+    - the address (if any)
+    - the mnemonic
+    - the comment (if any)
+    - the argument(s)
+
+    Note: the function does not check if the mnemonic exists.
+    """
+
+    # Void input case
+    if (line == "") : return ("", "", [], "")
+  
+    hasLabel = Instruction._asmReaderHasLabel(line)
+
+    class fsmState(Enum) :
+      INIT          = 0
+      ADDRESS       = 1
+      LABEL         = 2
+      MNEMONIC      = 3
+      ARG_ALPHANUM  = 4
+      ARG_BRACKET   = 5
+      COMMENT       = 6
+  
+    state     = fsmState.INIT
+    stateNext = fsmState.INIT
+
+    address   = ""
+    label     = ""
+    mnemonic  = ""
+    args      = []
+    comment   = ""
+    acc = ""
+    for (i, c) in enumerate(line) :
+      isLast = (i == (len(line)-1))
+      
+      # State INIT
+      if (state == fsmState.INIT) :
+        if (c == " ") :
+          pass
+        elif (c == ";") :
+          stateNext = fsmState.COMMENT
+        elif Instruction._asmReaderIsDigit(c) :
+          address += c
+          stateNext = fsmState.ADDRESS
+        elif Instruction._asmReaderIsAlpha(c) :
+          mnemonic += c
+          stateNext = fsmState.MNEMONIC
+        elif (c != " ") :
+          mnemonic += c
+          stateNext = fsmState.MNEMONIC
+
+      # State ADDRESS
+      elif (state == fsmState.ADDRESS) :
+        pass
+
+      # State MNEMONIC
+      elif (state == fsmState.MNEMONIC) :
+        if (c == " ") : 
+          firstSpace = True
+          stateNext = fsmState.ARG
+        else :
+          mnemonic += c
+
+
+      # State ARG
+      elif (state == fsmState.ARG) :
+        if firstSpace :
+          if (c != " ") :
+            firstSpace = False
+            acc += c
+        else :
+          if (c != " ") :
+            acc += c
+          else :
+            args.append(acc)
+            acc = ""
+
+
+      # State COMMENT
+      elif (state == fsmState.COMMENT) :
+        comment += c
+
+
+      state = stateNext
+
+    return (address, label, mnemonic, args, comment)
+
+
+
   # ---------------------------------------------------------------------------
   # METHOD Instruction._asmReaderFormatLine()                [STATIC] [PRIVATE]
   # ---------------------------------------------------------------------------
@@ -167,8 +272,9 @@ class Instruction :
   def _asmReaderFormatLine(line: str) -> str :
     """
     Normalises an instruction given as a string:
-    - removes useless/redundant whitespaces in a line of assembly code.
-    - enforce capital letters.
+    - removes useless/redundant whitespaces in a line of assembly code
+    - enforces capital letters
+    - enforces whitespaces for readability
 
     EXAMPLES
     "   nop"        -> "NOP"
@@ -179,69 +285,36 @@ class Instruction :
     Function is declared as static so that unit tests can be run on it.
     """
 
-    # Get read of leading spaces
-    line = Instruction._asmReaderConsumeSpace(line)
+    (address, label, mnemonic, args, comment) = Instruction._asmReaderParse(line)
+
+    # TODO
+    # output = ...
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD Instruction._asmReaderHasLabel()                  [STATIC] [PRIVATE]
+  # ---------------------------------------------------------------------------
+  @staticmethod
+  def _asmReaderHasLabel(line: str) -> bool :
+    """
+    Detects if the current line of assembly code contains an address label.
+    """
 
     # Void input case
-    if (line == "") : return line
+    if (line == "") : return ("", "", [], "")
   
     class fsmState(Enum) :
-      INIT      = 0
-      MNEMONIC  = 1
-      ARG       = 2
-      END       = 3
+      INIT          = 0
+      ADDRESS       = 1
+      LABEL         = 2
+      MNEMONIC      = 3
+      ARG_ALPHANUM  = 4
+      ARG_BRACKET   = 5
+      COMMENT       = 6
   
     state     = fsmState.INIT
     stateNext = fsmState.INIT
-  
-    output = ""
-    spaceQuota = 0
-    for (i, c) in enumerate(line) :
-      isLast = (i == (len(line)-1))
-      
-      # State INIT
-      if (state == fsmState.INIT) :
-        if (c != " ") :
-          output += c
-          stateNext = fsmState.MNEMONIC
-
-
-      # State MNEMONIC
-      elif (state == fsmState.MNEMONIC) :
-        output += c
-        if (c == " ") : stateNext = fsmState.ARG
-
-
-      # State ARG
-      elif (state == fsmState.ARG) :
-        if (c == ",") :
-          spaceQuota = 1
-          output += c
-          if not(isLast) :
-            if (line[i+1] != " ") :
-              output += " "
-        elif (c == " ") :
-          if (spaceQuota > 0) : 
-            output += c
-            spaceQuota -= 1
-        else :
-          output += c
-
-      state = stateNext
-
-    # Remove excessive trailing white spaces
-    for (i,c) in enumerate(output[::-1]) :
-      if (c != " ") :
-        iMax = len(output) - 1 - i
-        output = output[:(iMax+1)]
-        break
-
-
-
-    print()
-
-    output = output.upper()
-    return output
 
 
 
@@ -302,9 +375,12 @@ class Instruction :
     if (line == "") : return line
 
 
+
+
   # ---------------------------------------------------------------------------
-  # METHOD Instruction._asmReaderIsAlpha()
+  # METHOD Instruction._asmReaderIsAlpha()                   [STATIC] [PRIVATE]
   # ---------------------------------------------------------------------------
+  @staticmethod
   def _asmReaderIsAlpha(self, s: str) -> bool :
     """
     Returns True if the first char of 's' is a letter.
@@ -323,8 +399,9 @@ class Instruction :
 
 
   # ---------------------------------------------------------------------------
-  # METHOD instruction._asmReaderIsDigit()
+  # METHOD instruction._asmReaderIsDigit()                   [STATIC] [PRIVATE]
   # ---------------------------------------------------------------------------
+  @staticmethod
   def _asmReaderIsDigit(self, s: str) -> bool :
     """
     Returns True if the first char of 's' is a digit.
@@ -524,6 +601,11 @@ if (__name__ == "__main__") :
   assert(Instruction._asmReaderConsumeSpace(" ,123 ")   == ",123 ")
   assert(Instruction._asmReaderConsumeSpace("  ;456  ") == ";456  ")
   print("- Unit test passed: 'cpu._asmReaderConsumeSpace()'")
+
+  assert(Instruction._asmReaderParse("")    == ("", "", [], ""))
+  assert(Instruction._asmReaderParse("  ")  == ("", "", [], ""))
+  print("- Unit test passed: 'cpu._asmReaderParse()'")
+
 
   assert(Instruction._asmReaderFormatLine("nop")                == "NOP")               # Outputs are in capital letters (except for labels)
   assert(Instruction._asmReaderFormatLine("   nop")             == "NOP")               # Leading whitespaces are ignored
