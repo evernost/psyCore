@@ -15,10 +15,10 @@
 # EXTERNALS
 # =============================================================================
 # Projet libraries
-from enum import Enum   # For enumerated types in FSM
+# None.
 
 # Standard libraries
-# None.
+from enum import Enum   # For enumerated types in FSM
 
 
 
@@ -160,10 +160,13 @@ class Instruction :
     
 
 
-    # TODO:
+    # TODO: syntax check
     # isValid = Instruction._asmReaderSyntaxCheck(line)
 
+    # Parse the instruction
     (address, label, mnemonic, args, comment) = Instruction._asmReaderParse(line)
+    
+    # Normalise it 
     line = Instruction._asmReaderFormatLine(line)
 
 
@@ -302,19 +305,33 @@ class Instruction :
     """
 
     # Void input case
-    if (line == "") : return ("", "", [], "")
+    if (line == "") : False
   
     class fsmState(Enum) :
-      INIT          = 0
-      ADDRESS       = 1
-      LABEL         = 2
-      MNEMONIC      = 3
-      ARG_ALPHANUM  = 4
-      ARG_BRACKET   = 5
-      COMMENT       = 6
-  
+      INIT      = 0
+      LABEL     = 1
+      REMAINDER = 2
+
     state     = fsmState.INIT
     stateNext = fsmState.INIT
+
+    hasLabel = True
+    for c in line :
+
+      # State INIT
+      if (state == fsmState.INIT) :
+        if Instruction._asmReaderIsDigit(c) :
+          pass
+        elif ((c == "x") or (c == "X")) :
+          pass
+        elif (c == " ") :
+          pass
+        elif (c == ":") :
+          stateNext = fsmState.REMAINDER
+        else :
+          hasLabel = False
+
+    return hasLabel 
 
 
 
@@ -356,24 +373,6 @@ class Instruction :
         output += c
 
     return output
-
-
-
-  # ---------------------------------------------------------------------------
-  # METHOD Instruction._asmReaderConsumeMnemonic()           [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderConsumeMnemonic(line: str) -> str :
-    """
-    Consumes a valid mnemonic from the beginning of a string.
-    Mnemonic = alphanumeric characters + "."
-
-    Function is declared as static so that unit tests can be run on it.
-    """
-
-    # Empty input: empty output
-    if (line == "") : return line
-
 
 
 
