@@ -335,81 +335,45 @@ class Instruction :
 
 
 
-  # ---------------------------------------------------------------------------
-  # METHOD Instruction._asmReaderConsumeSpace()              [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderConsumeSpace(line: str) -> str :
-    """
-    Consumes the leading whitespace in a string (utility function)
-    Only the beginning of the string is affected.
-    The rest of the string remains untouched.
+  # # ---------------------------------------------------------------------------
+  # # METHOD Instruction._asmReaderConsumeSpace()              [STATIC] [PRIVATE]
+  # # ---------------------------------------------------------------------------
+  # @staticmethod
+  # def _asmReaderConsumeSpace(line: str) -> str :
+  #   """
+  #   Consumes the leading whitespace in a string (utility function)
+  #   Only the beginning of the string is affected.
+  #   The rest of the string remains untouched.
 
-    EXAMPLES
-    " 123 "   -> "123 "
-    "   nop"  -> "nop"
-    "  "      -> ""
-    See unit tests in main() for more examples.
+  #   EXAMPLES
+  #   " 123 "   -> "123 "
+  #   "   nop"  -> "nop"
+  #   "  "      -> ""
+  #   See unit tests in main() for more examples.
 
-    Function is declared as static so that unit tests can be run on it.
-    """
+  #   Function is declared as static so that unit tests can be run on it.
+  #   """
 
-    # Empty input: empty output
-    if (line == "") : return line
+  #   # Empty input: empty output
+  #   if (line == "") : return line
 
-    # If it doesn't start with a space, there is nothing to trim
-    if (line[0] != " ") : return line
+  #   # If it doesn't start with a space, there is nothing to trim
+  #   if (line[0] != " ") : return line
 
-    output = ""
-    isStillBlank = True
-    for c in line :
-      if isStillBlank :
-        if (c != " ") :
-          output += c
-          isStillBlank = False
-        else :
-          pass
-      else :
-        output += c
+  #   output = ""
+  #   isStillBlank = True
+  #   for c in line :
+  #     if isStillBlank :
+  #       if (c != " ") :
+  #         output += c
+  #         isStillBlank = False
+  #       else :
+  #         pass
+  #     else :
+  #       output += c
 
-    return output
+  #   return output
 
-
-
-  # ---------------------------------------------------------------------------
-  # METHOD Instruction._asmReaderIsAlpha()                   [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderIsAlpha(self, s: str) -> bool :
-    """
-    Returns True if the first char of 's' is a letter.
-    Capitalisation is ignored.
-    """
-
-    # Keep the first char, ignore the rest.
-    char = s[0]
-
-    isAlpha = False
-    isAlpha = isAlpha or ((ord(char) >= ord("A")) and (ord(char) <= ord("Z")))
-    isAlpha = isAlpha or ((ord(char) >= ord("a")) and (ord(char) <= ord("z")))
-
-    return isAlpha
-
-
-
-  # ---------------------------------------------------------------------------
-  # METHOD instruction._asmReaderIsDigit()                   [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderIsDigit(self, s: str) -> bool :
-    """
-    Returns True if the first char of 's' is a digit.
-    """
-
-    # Keep the first char, ignore the rest.
-    char = s[0]
-
-    return (ord(char) >= ord("0")) and (ord(char) <= ord("9"))
 
 
 
@@ -584,6 +548,96 @@ def fromStr(self, text: str) :
     return None
   else :
     return Instruction(text)
+
+
+
+# ---------------------------------------------------------------------------
+# FUNCTION _asmReaderIsAlpha()                                      [PRIVATE]
+# ---------------------------------------------------------------------------
+def _asmReaderIsAlpha(s: str) -> bool :
+  """
+  Returns True if the first char of 's' is a letter.
+  Capitalisation is ignored.
+  """
+
+  # Keep the first char, ignore the rest.
+  char = s[0]
+
+  isAlpha = False
+  isAlpha = isAlpha or ((ord(char) >= ord("A")) and (ord(char) <= ord("Z")))
+  isAlpha = isAlpha or ((ord(char) >= ord("a")) and (ord(char) <= ord("z")))
+
+  return isAlpha
+
+
+
+# -----------------------------------------------------------------------------
+# FUNCTION _asmReaderIsDigit()                                        [PRIVATE]
+# -----------------------------------------------------------------------------
+def _asmReaderIsDigit(s: str) -> bool :
+  """
+  Returns True if the first char of 's' is a digit.
+  """
+
+  # Keep the first char, ignore the rest.
+  char = s[0]
+
+  return (ord(char) >= ord("0")) and (ord(char) <= ord("9"))
+
+
+
+# ---------------------------------------------------------------------------
+# FUNCTION _asmReaderSyntaxCheck()                                  [PRIVATE]
+# ---------------------------------------------------------------------------
+def _asmReaderSyntaxCheck(line: str) -> bool :
+  """
+  Checks if an ASM line of code complies with the syntax rules.
+  Returns True if no violation has been detected.
+  """
+
+  # An empty string is not considered as a valid expression
+  if (line == "") : return False
+
+  for c in line :
+    if _asmReaderIsAlpha(c) :
+      pass
+    elif _asmReaderIsDigit(c) :
+      pass
+    elif c in [" ", ":", ",", ".", "(", ")", "[", "]"] :
+      pass
+    else :
+      return False
+
+
+
+
+
+  class fsmState(Enum) :
+    INIT      = 0
+    LABEL     = 1
+    REMAINDER = 2
+
+  state     = fsmState.INIT
+  stateNext = fsmState.INIT
+
+  hasLabel = True
+  for c in line :
+
+    if (state == fsmState.INIT) :
+      if Instruction._asmReaderIsDigit(c) :
+        pass
+      elif ((c == "x") or (c == "X")) :
+        pass
+      elif (c == " ") :
+        pass
+      elif (c == ":") :
+        stateNext = fsmState.REMAINDER
+      else :
+        hasLabel = False
+
+  return hasLabel 
+
+
 
 
 
