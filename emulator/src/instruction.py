@@ -18,7 +18,7 @@
 # None.
 
 # Standard libraries
-from enum import Enum   # For enumerated types in FSM
+import enum   # For enumerated types in FSM
 
 
 
@@ -587,17 +587,37 @@ def _asmReaderIsDigit(s: str) -> bool :
 
 
 # ---------------------------------------------------------------------------
-# FUNCTION _asmReaderSyntaxCheck()                                  [PRIVATE]
+# FUNCTION _asmReaderInstrParse()                                   [PRIVATE]
 # ---------------------------------------------------------------------------
-def _asmReaderSyntaxCheck(line: str) -> bool :
+def _asmReaderInstrParse(line: str, verbose = False)  :
   """
-  Checks if line of assembly code complies with the syntax rules.
-  Returns True if no violation has been detected, false otherwise.
+  Extracts all the fields in a line of assembly code.
+
+  The function returns (in the following order):
+    - the label       (optional)
+    - the address     (optional)
+    - the mnemonic
+    - the comment     (optional)
+    - the argument(s)
+  All of them as strings.
+  
+  The function acts as a syntax checker too. Empty variables are returned
+  when the parsing fails.
+  Enable the 'verbose' mode to get information on the syntax errors.
   """
+
+  label     = ""
+  address   = ""
+  mnemonic  = ""
+  comment   = ""
+  arguments = []
+
+  SYNTAX_ERROR = ("", "", "", "", [])
 
   # An empty string is not considered as a valid expression
-  if (line == "") : return False
+  if (line == "") : return SYNTAX_ERROR
 
+  # STEP 1: inspect the instruction, look for invalid characters
   for c in line :
     if _asmReaderIsAlpha(c) :
       pass
@@ -608,20 +628,21 @@ def _asmReaderSyntaxCheck(line: str) -> bool :
     elif c in [":", ",", ".", "(", ")", "[", "]", "_"] :
       pass
     else :
-      return False
+      if verbose : print("_asmReaderSyntaxCheck(): invalid character")
+      return SYNTAX_ERROR
 
-  class fsmState(Enum) :
+  # STEP 2: extract the different elements
+  class fsmState(enum.Enum) :
     INIT          = 0
     LABEL         = 1
-    LABEL_OR_MNEM = 2
-    ADDR          = 3
-    ADDR_HEX      = 4
-    MNEMONIC      = 5
+    LABEL_END     = 2
+    LABEL_OR_MNEM = 3
+    ADDR          = 4
+    ADDR_HEX      = 5
+    MNEMONIC      = 6
 
   state     = fsmState.INIT
   stateNext = fsmState.INIT
-
-  hasColon = False
 
   for c in line :
     if (state == fsmState.INIT) :
@@ -644,43 +665,33 @@ def _asmReaderSyntaxCheck(line: str) -> bool :
       elif _asmReaderIsDigit(c) :
         pass
       elif (c == " ") :
-        pass
+        stateNext = fsmState.LABEL_END
       elif (c == ":") :
         stateNext = fsmState.MNEMONIC
+      else :
+        return False
 
 
     state = stateNext
 
 
 
-
-
 # ---------------------------------------------------------------------------
-# FUNCTION _asmReaderInstrParse()                                   [PRIVATE]
+# FUNCTION _asmReaderSyntaxCheck()                                  [PRIVATE]
 # ---------------------------------------------------------------------------
-def _asmReaderInstrParse(line: str)  :
+def _asmReaderSyntaxCheck(line: str) -> bool :
   """
-  Extracts all the fields in a line of assembly code.
-
-  The function returns (in the following order):
-    - the label       (optional)
-    - the address     (optional)
-    - the mnemonic
-    - the comment     (optional)
-    - the argument(s)
-  All of them as strings.
+  Checks if line of assembly code complies with the syntax rules.
   
-  The function assumes that a syntax check has been done before.
-  (see '_asmReaderSyntaxCheck()')
+  The function checks the raw syntax only. 
+  It does not check if the instruction is used properly (number of arguments etc.)
+
+  Returns True if no violation has been detected, false otherwise.
   """
 
-  # An empty string is not considered as a valid expression
-  if (line == "") : return False
+  (label, address, mnemonic, comment, arguments) = _asmReaderInstrParse(line, verbose = True)
 
-  # Function is TODO.
-
-
-
+  return ((label == "") and (address == "") and (mnemonic == "") and (comment == "") and (arguments == ""))
 
 
 
@@ -692,10 +703,12 @@ if (__name__ == "__main__") :
   print("[INFO] Library 'instruction' called as main: running unit tests...")
 
   assert(_asmReaderSyntaxCheck("") == False)
+  assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == False)
+  print("- Unit test passed: '_asmReaderSyntaxCheck()'")
 
   assert(Instruction._asmReaderParse("")    == ("", "", [], ""))
   assert(Instruction._asmReaderParse("  ")  == ("", "", [], ""))
-  print("- Unit test passed: 'cpu._asmReaderParse()'")
+  print("- Unit test passed: '_asmReaderParse()'")
 
 
   assert(Instruction._asmReaderFormatLine("nop")                == "NOP")               # Outputs are in capital letters (except for labels)
@@ -709,5 +722,5 @@ if (__name__ == "__main__") :
   assert(Instruction._asmReaderFormatLine("")                   == "")                  # Odd input
   assert(Instruction._asmReaderFormatLine(" ")                  == "")                  # Odd input
   assert(Instruction._asmReaderFormatLine("   ")                == "")                  # Odd input
-  print("- Unit test passed: 'cpu._asmReaderFormatLine()'")
+  print("- Unit test passed: '_asmReaderFormatLine()'")
   
