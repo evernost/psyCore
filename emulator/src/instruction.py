@@ -193,7 +193,7 @@ class Instruction :
   
     hasLabel = Instruction._asmReaderHasLabel(line)
 
-    class fsmState(Enum) :
+    class fsmState(enum.Enum) :
       INIT          = 0
       ADDRESS       = 1
       LABEL         = 2
@@ -292,88 +292,6 @@ class Instruction :
 
     # TODO
     # output = ...
-
-
-
-  # ---------------------------------------------------------------------------
-  # METHOD Instruction._asmReaderHasLabel()                  [STATIC] [PRIVATE]
-  # ---------------------------------------------------------------------------
-  @staticmethod
-  def _asmReaderHasLabel(line: str) -> bool :
-    """
-    Detects if the current line of assembly code contains an address label.
-    """
-
-    # Void input case
-    if (line == "") : False
-  
-    class fsmState(Enum) :
-      INIT      = 0
-      LABEL     = 1
-      REMAINDER = 2
-
-    state     = fsmState.INIT
-    stateNext = fsmState.INIT
-
-    hasLabel = True
-    for c in line :
-
-      # State INIT
-      if (state == fsmState.INIT) :
-        if Instruction._asmReaderIsDigit(c) :
-          pass
-        elif ((c == "x") or (c == "X")) :
-          pass
-        elif (c == " ") :
-          pass
-        elif (c == ":") :
-          stateNext = fsmState.REMAINDER
-        else :
-          hasLabel = False
-
-    return hasLabel 
-
-
-
-  # # ---------------------------------------------------------------------------
-  # # METHOD Instruction._asmReaderConsumeSpace()              [STATIC] [PRIVATE]
-  # # ---------------------------------------------------------------------------
-  # @staticmethod
-  # def _asmReaderConsumeSpace(line: str) -> str :
-  #   """
-  #   Consumes the leading whitespace in a string (utility function)
-  #   Only the beginning of the string is affected.
-  #   The rest of the string remains untouched.
-
-  #   EXAMPLES
-  #   " 123 "   -> "123 "
-  #   "   nop"  -> "nop"
-  #   "  "      -> ""
-  #   See unit tests in main() for more examples.
-
-  #   Function is declared as static so that unit tests can be run on it.
-  #   """
-
-  #   # Empty input: empty output
-  #   if (line == "") : return line
-
-  #   # If it doesn't start with a space, there is nothing to trim
-  #   if (line[0] != " ") : return line
-
-  #   output = ""
-  #   isStillBlank = True
-  #   for c in line :
-  #     if isStillBlank :
-  #       if (c != " ") :
-  #         output += c
-  #         isStillBlank = False
-  #       else :
-  #         pass
-  #     else :
-  #       output += c
-
-  #   return output
-
 
 
 
@@ -604,6 +522,11 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
   The function acts as a syntax checker too. Empty variables are returned
   when the parsing fails.
   Enable the 'verbose' mode to get information on the syntax errors.
+
+  Rules:
+  - a mnemonic can begin with "_"
+  - a mnemonic can contain numbers (ex: 'MOV4', 'FLOAT32ADD')
+
   """
 
   label     = ""
@@ -628,51 +551,116 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     elif c in [":", ",", ".", "(", ")", "[", "]", "_"] :
       pass
     else :
-      if verbose : print("_asmReaderSyntaxCheck(): invalid character")
+      if verbose : print("_asmReaderInstrParse(): invalid character")
       return SYNTAX_ERROR
 
   # STEP 2: extract the different elements
   class fsmState(enum.Enum) :
-    INIT          = 0
-    LABEL         = 1
-    LABEL_END     = 2
-    LABEL_OR_MNEM = 3
-    ADDR          = 4
-    ADDR_HEX      = 5
-    MNEMONIC      = 6
+    INIT              = 0
+    LABEL             = 1
+    LABEL_END         = 2
+    LABEL_OR_MNEM     = 3
+    LABEL_OR_MNEM_END = 4
+    ADDR              = 5
+    ADDR_HEX          = 5
+    MNEMONIC          = 6
+    ARG               = 7
 
   state     = fsmState.INIT
   stateNext = fsmState.INIT
 
+  got_x = False
+  accu = ""
+  isValid = True
   for c in line :
     if (state == fsmState.INIT) :
       if (c == "0") :
+        accu += c
         stateNext = fsmState.ADDR_HEX
       elif _asmReaderIsDigit(c) :
+        accu += c
         stateNext = fsmState.ADDR
-      elif (c == "_") :
-        stateNext = fsmState.LABEL
       elif _asmReaderIsAlpha(c) :
+        accu += c
+        stateNext = fsmState.LABEL_OR_MNEM
+      elif (c == "_") :
+        accu += c
         stateNext = fsmState.LABEL_OR_MNEM
       elif (c == " ") :
         pass
       else :
-        return False
+        if verbose : print(f"_asmReaderInstrParse(): an instruction cannot begin with '{c}'.")
+        return SYNTAX_ERROR
 
-    elif (state == fsmState.LABEL) :
-      if _asmReaderIsAlpha(c) :
-        pass
-      elif _asmReaderIsDigit(c) :
-        pass
+    elif (state == fsmState.LABEL_OR_MNEM) :
+      if (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
+        accu += c
+      elif ((c == "_") or (c == ".")) :
+        accu += c
       elif (c == " ") :
-        stateNext = fsmState.LABEL_END
+        stateNext = fsmState.LABEL_OR_MNEM_END
       elif (c == ":") :
+        label = accu
+        accu = ""
         stateNext = fsmState.MNEMONIC
       else :
-        return False
+        if verbose : print(f"_asmReaderInstrParse(): '{c}' cannot be in a label or mnemonic.")
+        return SYNTAX_ERROR
+
+    elif (state == fsmState.LABEL_OR_MNEM_END) :
+      if (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
+        mnemonic = accu
+        accu = c
+        stateNext = fsmState.ARG
+      elif (c in ["[", "(", "_", "."]) :
+        mnemonic = accu
+        accu = c
+        stateNext = fsmState.ARG
+      elif (c == " ") :
+        pass
+      elif (c == ":") :
+        label = accu
+        accu = ""
+        stateNext = fsmState.MNEMONIC
+      else :
+        if verbose : print(f"_asmReaderInstrParse(): an argument cannot begin with '{c}'.")
+        return SYNTAX_ERROR
+
+
+    elif (state == fsmState.ADDR_HEX) :
+      if ((c == "x") or (c == "X")) :
+        if got_x :
+          if verbose : print(f"_asmReaderInstrParse(): invalid hex address.")
+          return SYNTAX_ERROR
+        else :
+          got_x = True
+          accu += c
+      elif (c == "0") :
+        if got_x :
+          accu += c
+        else :
+          if verbose : print(f"_asmReaderInstrParse(): too many leading '0' in an hex address.")
+          return SYNTAX_ERROR
+      elif _asmReaderIsDigit(c) :
+        accu += c
+      elif ((c == " ") or (c == ":")) :
+        address = accu
+        accu = ""
+        stateNext = fsmState.LABEL_OR_MNEM_END
+      else :
+        if verbose : print(f"_asmReaderInstrParse(): an argument cannot begin with '{c}'.")
+        return SYNTAX_ERROR
+      
 
 
     state = stateNext
+
+
+  if isValid :
+    return (label, address, mnemonic, comment, arguments)
+  else :
+    if verbose : print(f"_asmReaderInstrParse(): parser failed due to earlier error.")
+    return SYNTAX_ERROR
 
 
 
@@ -686,12 +674,12 @@ def _asmReaderSyntaxCheck(line: str) -> bool :
   The function checks the raw syntax only. 
   It does not check if the instruction is used properly (number of arguments etc.)
 
-  Returns True if no violation has been detected, false otherwise.
+  Returns True if no violation has been detected, False otherwise.
   """
 
   (label, address, mnemonic, comment, arguments) = _asmReaderInstrParse(line, verbose = True)
 
-  return ((label == "") and (address == "") and (mnemonic == "") and (comment == "") and (arguments == ""))
+  return not((label == "") and (address == "") and (mnemonic == "") and (comment == "") and (arguments == []))
 
 
 
@@ -703,7 +691,11 @@ if (__name__ == "__main__") :
   print("[INFO] Library 'instruction' called as main: running unit tests...")
 
   assert(_asmReaderSyntaxCheck("") == False)
-  assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == False)
+  assert(_asmReaderSyntaxCheck(" [") == False)
+  assert(_asmReaderSyntaxCheck("0x12: MOV W1,W2") == True)
+  assert(_asmReaderSyntaxCheck("0xx12: MOV W1,W2") == False)
+  assert(_asmReaderSyntaxCheck("00x12: MOV W1,W2") == False)
+  assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == True)
   print("- Unit test passed: '_asmReaderSyntaxCheck()'")
 
   assert(Instruction._asmReaderParse("")    == ("", "", [], ""))
