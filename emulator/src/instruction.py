@@ -565,6 +565,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     ADDR_HEX          = 5
     MNEMONIC          = 6
     ARG               = 7
+    ARG_BRACKET       = 8
 
   state     = fsmState.INIT
   stateNext = fsmState.INIT
@@ -592,6 +593,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         if verbose : print(f"_asmReaderInstrParse(): an instruction cannot begin with '{c}'.")
         return SYNTAX_ERROR
 
+
     elif (state == fsmState.LABEL_OR_MNEM) :
       if (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
         accu += c
@@ -607,12 +609,17 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         if verbose : print(f"_asmReaderInstrParse(): '{c}' cannot be in a label or mnemonic.")
         return SYNTAX_ERROR
 
+
     elif (state == fsmState.LABEL_OR_MNEM_END) :
       if (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
         mnemonic = accu
         accu = c
         stateNext = fsmState.ARG
-      elif (c in ["[", "(", "_", "."]) :
+      elif ((c == "[") or  (c == "(")) :
+        mnemonic = accu
+        accu = c
+        stateNext = fsmState.ARG_BRACKET
+      elif ((c == "_") or  (c == ".")) :
         mnemonic = accu
         accu = c
         stateNext = fsmState.ARG
@@ -626,6 +633,18 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         if verbose : print(f"_asmReaderInstrParse(): an argument cannot begin with '{c}'.")
         return SYNTAX_ERROR
 
+
+    elif (state == fsmState.ADDR) :
+      if _asmReaderIsDigit(c) :
+        accu += c
+      elif ((c == " ") or (c == ":")) :
+        address = accu
+        accu = ""
+        stateNext = fsmState.LABEL_OR_MNEM_END
+      else :
+        if verbose : print(f"_asmReaderInstrParse(): an address cannot contain '{c}'.")
+        return SYNTAX_ERROR
+      
 
     elif (state == fsmState.ADDR_HEX) :
       if ((c == "x") or (c == "X")) :
@@ -648,10 +667,9 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.LABEL_OR_MNEM_END
       else :
-        if verbose : print(f"_asmReaderInstrParse(): an argument cannot begin with '{c}'.")
+        if verbose : print(f"_asmReaderInstrParse(): a hex address cannot contain '{c}'.")
         return SYNTAX_ERROR
-      
-
+    
 
     state = stateNext
 
@@ -695,6 +713,8 @@ if (__name__ == "__main__") :
   assert(_asmReaderSyntaxCheck("0x12: MOV W1,W2") == True)
   assert(_asmReaderSyntaxCheck("0xx12: MOV W1,W2") == False)
   assert(_asmReaderSyntaxCheck("00x12: MOV W1,W2") == False)
+  assert(_asmReaderSyntaxCheck("MOV ,W1,W2") == False)
+  assert(_asmReaderSyntaxCheck("MOV [123],W2") == True)
   assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == True)
   print("- Unit test passed: '_asmReaderSyntaxCheck()'")
 
