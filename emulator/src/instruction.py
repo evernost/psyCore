@@ -551,7 +551,8 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     elif c in [":", ",", ".", "(", ")", "[", "]", "_"] :
       pass
     else :
-      if verbose : print("_asmReaderInstrParse(): invalid character")
+      # TODO: not a 'hard' reject, it could be accepted if within a comment
+      if verbose : print(f"_asmReaderInstrParse(): '{c}' is not supported in an expression.")
       return SYNTAX_ERROR
 
   # STEP 2: extract the different elements
@@ -562,10 +563,10 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     LABEL_OR_MNEM     = 3
     LABEL_OR_MNEM_END = 4
     ADDR              = 5
-    ADDR_HEX          = 5
-    MNEMONIC          = 6
-    ARG               = 7
-    ARG_BRACKET       = 8
+    ADDR_HEX          = 6
+    MNEMONIC          = 7
+    ARG               = 8
+    ARG_BRACKET       = 9
 
   state     = fsmState.INIT
   stateNext = fsmState.INIT
@@ -573,9 +574,15 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
   got_x = False
   accu = ""
   isValid = True
-  for c in line :
+  lineExt = line + "/"
+  for (i, c) in enumerate(line) :
+    isLast = (i == len(lineExt))
+    
     if (state == fsmState.INIT) :
-      if (c == "0") :
+      if isLast :
+        if verbose : print(f"_asmReaderInstrParse(): syntax error (possible void instruction)")
+        return SYNTAX_ERROR
+      elif (c == "0") :
         accu += c
         stateNext = fsmState.ADDR_HEX
       elif _asmReaderIsDigit(c) :
@@ -649,11 +656,17 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     elif (state == fsmState.ADDR_HEX) :
       if ((c == "x") or (c == "X")) :
         if got_x :
-          if verbose : print(f"_asmReaderInstrParse(): invalid hex address.")
+          if verbose : print(f"_asmReaderInstrParse(): invalid hex address (too many 'x')")
           return SYNTAX_ERROR
         else :
           got_x = True
           accu += c
+      elif (c.lower() in ['a', 'b', 'c', 'd', 'e', 'f']) :
+        if got_x :
+          accu += c
+        else :
+          if verbose : print(f"_asmReaderInstrParse(): invalid hex address (no '0x' detected)")
+          return SYNTAX_ERROR
       elif (c == "0") :
         if got_x :
           accu += c
@@ -710,7 +723,10 @@ if (__name__ == "__main__") :
 
   assert(_asmReaderSyntaxCheck("") == False)
   assert(_asmReaderSyntaxCheck(" [") == False)
-  assert(_asmReaderSyntaxCheck("0x12: MOV W1,W2") == True)
+  assert(_asmReaderSyntaxCheck("/") == False)
+  assert(_asmReaderSyntaxCheck("*") == False)
+  assert(_asmReaderSyntaxCheck("0x0C") == False)
+  assert(_asmReaderSyntaxCheck("0x1C: MOV W1,W2") == True)
   assert(_asmReaderSyntaxCheck("0xx12: MOV W1,W2") == False)
   assert(_asmReaderSyntaxCheck("00x12: MOV W1,W2") == False)
   assert(_asmReaderSyntaxCheck("MOV ,W1,W2") == False)
