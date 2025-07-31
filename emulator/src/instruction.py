@@ -575,8 +575,8 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
   accu = ""
   isValid = True
   lineExt = line + "/"
-  for (i, c) in enumerate(line) :
-    isLast = (i == len(lineExt))
+  for (i, c) in enumerate(lineExt) :
+    isLast = (i == len(line))
     
     if (state == fsmState.INIT) :
       if isLast :
@@ -602,7 +602,9 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
 
 
     elif (state == fsmState.LABEL_OR_MNEM) :
-      if (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
+      if isLast :
+        pass
+      elif (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
         accu += c
       elif ((c == "_") or (c == ".")) :
         accu += c
@@ -618,7 +620,9 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
 
 
     elif (state == fsmState.LABEL_OR_MNEM_END) :
-      if (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
+      if isLast :
+        pass
+      elif (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
         mnemonic = accu
         accu = c
         stateNext = fsmState.ARG
@@ -642,6 +646,9 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
 
 
     elif (state == fsmState.ADDR) :
+      if isLast :
+        if verbose : print(f"_asmReaderInstrParse(): an address must be followed by ':'")
+        return SYNTAX_ERROR
       if _asmReaderIsDigit(c) :
         accu += c
       elif ((c == " ") or (c == ":")) :
@@ -710,7 +717,17 @@ def _asmReaderSyntaxCheck(line: str) -> bool :
 
   (label, address, mnemonic, comment, arguments) = _asmReaderInstrParse(line, verbose = True)
 
-  return not((label == "") and (address == "") and (mnemonic == "") and (comment == "") and (arguments == []))
+  if ((label == "") and (address == "") and (mnemonic == "") and (comment == "") and (arguments == [])) :
+    return Syntax.ERROR
+  else :
+    return Syntax.OK
+
+
+
+class Syntax(enum.Enum):
+  OK = 0
+  ERROR = -1
+
 
 
 
@@ -721,15 +738,16 @@ if (__name__ == "__main__") :
 
   print("[INFO] Library 'instruction' called as main: running unit tests...")
 
-  assert(_asmReaderSyntaxCheck("") == False)
-  assert(_asmReaderSyntaxCheck(" [") == False)
-  assert(_asmReaderSyntaxCheck("/") == False)
-  assert(_asmReaderSyntaxCheck("*") == False)
-  assert(_asmReaderSyntaxCheck("0x0C") == False)
-  assert(_asmReaderSyntaxCheck("0x1C: MOV W1,W2") == True)
-  assert(_asmReaderSyntaxCheck("0xx12: MOV W1,W2") == False)
-  assert(_asmReaderSyntaxCheck("00x12: MOV W1,W2") == False)
-  assert(_asmReaderSyntaxCheck("MOV ,W1,W2") == False)
+  assert(_asmReaderSyntaxCheck("") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck(" [") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("/") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("*") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("0x0C") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("128") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("0x1C: MOV W1,W2") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck("0xx12: MOV W1,W2") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("00x12: MOV W1,W2") == Syntax.ERROR)
+  assert(_asmReaderSyntaxCheck("MOV ,W1,W2") == Syntax.ERROR)
   assert(_asmReaderSyntaxCheck("MOV [123],W2") == True)
   assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == True)
   print("- Unit test passed: '_asmReaderSyntaxCheck()'")
