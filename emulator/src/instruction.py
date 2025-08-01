@@ -552,7 +552,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
       pass
     else :
       # TODO: not a 'hard' reject, it could be accepted if within a comment
-      if verbose : print(f"_asmReaderInstrParse(): '{c}' is not supported in an expression.")
+      #if verbose : print(f"[WARNING] Parser: '{c}' is not supported in an expression.")
       return SYNTAX_ERROR
 
   # STEP 2: extract the different elements
@@ -580,7 +580,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     
     if (state == fsmState.INIT) :
       if isLast :
-        if verbose : print(f"_asmReaderInstrParse(): syntax error (possible void instruction)")
+        if verbose : print(f"[ERROR] Parser: syntax error (possible void instruction)")
         return SYNTAX_ERROR
       elif (c == "0") :
         accu += c
@@ -597,7 +597,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
       elif (c == " ") :
         pass
       else :
-        if verbose : print(f"_asmReaderInstrParse(): an instruction cannot begin with '{c}'.")
+        if verbose : print(f"[ERROR] Parser: an instruction cannot begin with '{c}'.")
         return SYNTAX_ERROR
 
 
@@ -615,7 +615,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.MNEMONIC
       else :
-        if verbose : print(f"_asmReaderInstrParse(): '{c}' cannot be in a label or mnemonic.")
+        if verbose : print(f"[ERROR] Parser: '{c}' cannot be in a label or mnemonic.")
         return SYNTAX_ERROR
 
 
@@ -641,13 +641,13 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.MNEMONIC
       else :
-        if verbose : print(f"_asmReaderInstrParse(): an argument cannot begin with '{c}'.")
+        if verbose : print(f"[ERROR] Parser: an argument cannot begin with '{c}'.")
         return SYNTAX_ERROR
 
 
     elif (state == fsmState.ADDR) :
       if isLast :
-        if verbose : print(f"_asmReaderInstrParse(): an address must be followed by ':'")
+        if verbose : print(f"[ERROR] Parser: an address label must be followed by ':'")
         return SYNTAX_ERROR
       if _asmReaderIsDigit(c) :
         accu += c
@@ -656,14 +656,17 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.LABEL_OR_MNEM_END
       else :
-        if verbose : print(f"_asmReaderInstrParse(): an address cannot contain '{c}'.")
+        if verbose : print(f"[ERROR] Parser: an address cannot contain '{c}'.")
         return SYNTAX_ERROR
       
 
     elif (state == fsmState.ADDR_HEX) :
-      if ((c == "x") or (c == "X")) :
+      if isLast :
+        if verbose : print(f"[ERROR] Parser: an address label must be followed by ':'")
+        return SYNTAX_ERROR
+      elif ((c == "x") or (c == "X")) :
         if got_x :
-          if verbose : print(f"_asmReaderInstrParse(): invalid hex address (too many 'x')")
+          if verbose : print(f"[ERROR] Parser: too many 'x' in the '0x' of an hex address.")
           return SYNTAX_ERROR
         else :
           got_x = True
@@ -672,13 +675,13 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         if got_x :
           accu += c
         else :
-          if verbose : print(f"_asmReaderInstrParse(): invalid hex address (no '0x' detected)")
+          if verbose : print(f"[ERROR] Parser: invalid hex address (no '0x' detected)")
           return SYNTAX_ERROR
       elif (c == "0") :
         if got_x :
           accu += c
         else :
-          if verbose : print(f"_asmReaderInstrParse(): too many leading '0' in an hex address.")
+          if verbose : print(f"[ERROR] Parser: too many '0' in the '0x' of an hex address.")
           return SYNTAX_ERROR
       elif _asmReaderIsDigit(c) :
         accu += c
@@ -687,7 +690,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.LABEL_OR_MNEM_END
       else :
-        if verbose : print(f"_asmReaderInstrParse(): a hex address cannot contain '{c}'.")
+        if verbose : print(f"[ERROR] Parser: a hex address cannot contain '{c}'.")
         return SYNTAX_ERROR
     
 
@@ -755,7 +758,6 @@ if (__name__ == "__main__") :
   assert(Instruction._asmReaderParse("")    == ("", "", [], ""))
   assert(Instruction._asmReaderParse("  ")  == ("", "", [], ""))
   print("- Unit test passed: '_asmReaderParse()'")
-
 
   assert(Instruction._asmReaderFormatLine("nop")                == "NOP")               # Outputs are in capital letters (except for labels)
   assert(Instruction._asmReaderFormatLine("   nop")             == "NOP")               # Leading whitespaces are ignored
