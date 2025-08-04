@@ -527,6 +527,12 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
   - a mnemonic can begin with "_"
   - a mnemonic can contain numbers (ex: 'MOV4', 'FLOAT32ADD')
 
+  Notes
+  - N1: 
+  - N2: 
+  - N3: an isolated alphanumeric sequence is assumed to be a mnemonic 
+        (and not a label) because it is the most plausible option.
+
   """
 
   label     = ""
@@ -566,12 +572,14 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     ADDR_HEX          = 6
     MNEMONIC          = 7
     ARG               = 8
-    ARG_BRACKET       = 9
+    ARG_END           = 9
+    ARG_BRACKET       = 10
+    ARG_BRACKET_END   = 11
 
   state     = fsmState.INIT
   stateNext = fsmState.INIT
 
-  got_x = False
+  got_0x = False
   accu = ""
   isValid = True
   lineExt = line + "/"
@@ -580,7 +588,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
     
     if (state == fsmState.INIT) :
       if isLast :
-        if verbose : print(f"[ERROR] Parser: syntax error (possible void instruction)")
+        if verbose : print(f"[ERROR] Line '{line}': syntax error (possible void instruction)")
         return SYNTAX_ERROR
       elif (c == "0") :
         accu += c
@@ -597,13 +605,14 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
       elif (c == " ") :
         pass
       else :
-        if verbose : print(f"[ERROR] Parser: an instruction cannot begin with '{c}'.")
+        if verbose : print(f"[ERROR] Line '{line}': an instruction cannot begin with '{c}'.")
         return SYNTAX_ERROR
 
 
     elif (state == fsmState.LABEL_OR_MNEM) :
       if isLast :
-        pass
+        # See note N3
+        mnemonic = accu
       elif (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
         accu += c
       elif ((c == "_") or (c == ".")) :
@@ -615,13 +624,18 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.MNEMONIC
       else :
-        if verbose : print(f"[ERROR] Parser: '{c}' cannot be in a label or mnemonic.")
+        if verbose : print(f"[ERROR] Line '{line}': cannot be in a label or mnemonic.")
         return SYNTAX_ERROR
 
 
     elif (state == fsmState.LABEL_OR_MNEM_END) :
       if isLast :
-        pass
+        # See note N3
+        mnemonic = accu
+      elif (c == ":") :
+        label = accu
+        accu = ""
+        stateNext = fsmState.MNEMONIC
       elif (_asmReaderIsAlpha(c) or _asmReaderIsDigit(c)) :
         mnemonic = accu
         accu = c
@@ -636,18 +650,14 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         stateNext = fsmState.ARG
       elif (c == " ") :
         pass
-      elif (c == ":") :
-        label = accu
-        accu = ""
-        stateNext = fsmState.MNEMONIC
       else :
-        if verbose : print(f"[ERROR] Parser: an argument cannot begin with '{c}'.")
+        if verbose : print(f"[ERROR] Line '{line}': an argument cannot begin with '{c}'.")
         return SYNTAX_ERROR
 
 
     elif (state == fsmState.ADDR) :
       if isLast :
-        if verbose : print(f"[ERROR] Parser: an address label must be followed by ':'")
+        if verbose : print(f"[ERROR] Line '{line}': an address label must be followed by ':'")
         return SYNTAX_ERROR
       if _asmReaderIsDigit(c) :
         accu += c
@@ -656,29 +666,44 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
         accu = ""
         stateNext = fsmState.LABEL_OR_MNEM_END
       else :
-        if verbose : print(f"[ERROR] Parser: an address cannot contain '{c}'.")
+        if verbose : print(f"[ERROR] Line '{line}': an address cannot contain '{c}'.")
         return SYNTAX_ERROR
-      
+
+
+    elif (state == fsmState.ARG) :
+      if isLast :
+        pass
+      else :
+        pass
+
+    elif (state == fsmState.ARG_BRACKET) :
+      if isLast :
+        pass
+      else :
+        pass
+
+
+
 
     elif (state == fsmState.ADDR_HEX) :
       if isLast :
         if verbose : print(f"[ERROR] Parser: an address label must be followed by ':'")
         return SYNTAX_ERROR
       elif ((c == "x") or (c == "X")) :
-        if got_x :
+        if got_0x :
           if verbose : print(f"[ERROR] Parser: too many 'x' in the '0x' of an hex address.")
           return SYNTAX_ERROR
         else :
-          got_x = True
+          got_0x = True
           accu += c
       elif (c.lower() in ['a', 'b', 'c', 'd', 'e', 'f']) :
-        if got_x :
+        if got_0x :
           accu += c
         else :
           if verbose : print(f"[ERROR] Parser: invalid hex address (no '0x' detected)")
           return SYNTAX_ERROR
       elif (c == "0") :
-        if got_x :
+        if got_0x :
           accu += c
         else :
           if verbose : print(f"[ERROR] Parser: too many '0' in the '0x' of an hex address.")
@@ -698,6 +723,11 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
 
 
   if isValid :
+    print(f"[DEBUG] Parser analysis for '{line}':")
+    print(f"- label     = '{label}'")
+    print(f"- address   = '{address}'")
+    print(f"- mnemonic  = '{mnemonic}'")
+    print(f"- comment   = '{comment}'")
     return (label, address, mnemonic, comment, arguments)
   else :
     if verbose : print(f"_asmReaderInstrParse(): parser failed due to earlier error.")
@@ -748,11 +778,16 @@ if (__name__ == "__main__") :
   assert(_asmReaderSyntaxCheck("0x0C") == Syntax.ERROR)
   assert(_asmReaderSyntaxCheck("128") == Syntax.ERROR)
   assert(_asmReaderSyntaxCheck("0x1C: MOV W1,W2") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck("   0x10c: MOV.W W1,W2") == Syntax.OK)
   assert(_asmReaderSyntaxCheck("0xx12: MOV W1,W2") == Syntax.ERROR)
   assert(_asmReaderSyntaxCheck("00x12: MOV W1,W2") == Syntax.ERROR)
   assert(_asmReaderSyntaxCheck("MOV ,W1,W2") == Syntax.ERROR)
-  assert(_asmReaderSyntaxCheck("MOV [123],W2") == True)
-  assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == True)
+  assert(_asmReaderSyntaxCheck("MOV [123],W2") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck("REPEAT") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck("  REPEAT") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck(" REPEAT ") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck("_label20  ") == Syntax.OK)
+  assert(_asmReaderSyntaxCheck("_label1 : MOV W1,W2") == Syntax.OK)
   print("- Unit test passed: '_asmReaderSyntaxCheck()'")
 
   assert(Instruction._asmReaderParse("")    == ("", "", [], ""))
