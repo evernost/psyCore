@@ -4,7 +4,7 @@
 # Module name   : cpu
 # File name     : cpu.py
 # File type     : Python script (Python 3.10 or higher)
-# Purpose       : abstraction class for a single core custom CPU
+# Purpose       : abstraction class for 1 core of the psyCore CPU
 # Author        : QuBi (nitrogenium@outlook.fr)
 # Creation date : May 22nd, 2025
 # -----------------------------------------------------------------------------
@@ -26,12 +26,15 @@ import os               # For path manipulations
 # =============================================================================
 # CONSTANTS POOL
 # =============================================================================
-INSTRUCTION_MEM_SIZE  = 1024    # Size of the instruction memory (in words)
+INSTRUCTION_SIZE      = 32      # Size of an instruction (in bits)
+INSTRUCTION_MEM_SIZE  = 1024    # Size of the instruction memory (in number of instructions)
 DATA_MEM_SIZE         = 1024    # Size of the data memory (in words)
 
 PIPELINE_SIZE = 5
 
 N_WORK_REGS = 16                # Number of Work registers (W)
+
+
 
 
 
@@ -51,26 +54,32 @@ class cpu :
     # Program counter init
     self.PC = 0 
 
-    # Instruction/data memory init
+    # Instruction memory (initialized with NOP)
     self.iMem = ["NOP" for _ in range(INSTRUCTION_MEM_SIZE)]
+    
+    # Data memory (initialized with 0)
     self.dMem = [0 for _ in range(DATA_MEM_SIZE)]
 
-    # Code structure
-    # - cpu.resetAddr : address of the first instruction read after CPU reset
-    # - cpu.itAddr    : address of the interrupt handler
-    self.resetAddr = 0
-    self.itAddr = 1000 
-
-    # Work registers init
+    # Work registers (initialized with 0)
     self.W = [0 for _ in range(N_WORK_REGS)]
 
-    # Status
-    self.statReg = 0
+    # Status registers
+    self.status_Z = 0
+
+    # Code organization
+    # - cpu.resetAddr : address of the first instruction read after CPU reset
+    # - cpu.irqAddr   : address of the interrupt handler
+    self.resetAddr  = 0
+    self.irqAddr    = 512
+
+    # Faults
     self.isTrapped = False
 
-    # Stack 
-    # TODO: create a stack object?
+    # Stack
     self.stack = stack.Stack()
+
+    # Clock cycles counter
+    self.clockCount = 0
 
     # CPU execution statistics
     self.nCyclesLost = 0
@@ -82,10 +91,10 @@ class cpu :
   # ---------------------------------------------------------------------------
   def loadFromFile(self, asmFile: str) :
     """
-    Initialises the program memory with assembly code from a text file.
+    Initialises the program memory with assembly read from a text file.
     
     By default, the first instruction in the file is written at 'cpu.startAddr'.
-    Consecutive instructions are stored at contiguous addresses in program
+    Following instructions are stored at contiguous addresses in program
     memory.
     
     Instructions can be prefixed with the address of their location in program
@@ -140,7 +149,7 @@ class cpu :
   # ---------------------------------------------------------------------------
   # METHOD cpu.reset()
   # ---------------------------------------------------------------------------
-  def reset(self) :
+  def reset(self) -> None :
     """
     Emulates a hardware reset on the CPU.
     """
@@ -149,6 +158,19 @@ class cpu :
     self.W          = [0 for _ in range(N_WORK_REGS)]
     self.stack      = []
     self.isTrapped  = False
+
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD cpu.fireExtIRQ()
+  # ---------------------------------------------------------------------------
+  def fireExtIRQ(self) :
+    """
+    Emulates an external IRQ event ('EXT' pin)
+    """
+
+    print("[WARNING] cpu.fireExtIRQ() is not available yet.")
 
 
 
@@ -174,18 +196,19 @@ class cpu :
   # ---------------------------------------------------------------------------
   # METHOD cpu._setPC()                                               [PRIVATE]
   # ---------------------------------------------------------------------------
-  def _setPC(self, newPC) :
+  def _setPC(self, val) :
     """
     Sets the PC (program counter) to a specific spot.
     Out of range values will call a hardware trap.
     """
 
     if not(self.isTrapped) :
-      if ((newPC < 0) or (newPC >= DATA_MEM_SIZE)) :
+      if (val < 0) :
+        print("[ERROR] cpu._setPC() cannot handle negative values.")
+      elif (val >= DATA_MEM_SIZE) :
         self.__trap_pcOutOfRange()
-
       else :
-        self.PC = newPC
+        self.PC = val
 
 
 

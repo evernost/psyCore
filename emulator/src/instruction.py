@@ -18,7 +18,7 @@
 # None.
 
 # Standard libraries
-import enum   # For enumerated types in FSM
+import enum       # For enumerated types in FSM
 
 
 
@@ -37,7 +37,8 @@ class Instruction :
   """
   INSTRUCTION object.
   
-  The Instruction object is an abstraction for a CPU instruction.
+  The Instruction object is an abstraction for a psyCore CPU instruction.
+
   It describes the task carried out by the instruction and keeps track of some 
   useful information like:
   - address of the instruction
@@ -47,7 +48,7 @@ class Instruction :
   It keeps track of the context for instructions that need more than one 
   clock cycle to be done.
 
-  Usually, the instruction object is destroyed once its execution is done.
+  The instruction object is destroyed once its execution is done.
   """
 
   def __init__(self, text: str) :
@@ -56,35 +57,39 @@ class Instruction :
     self.cycles = 1  
 
     # Populated after a Instruction._decode()
-    self.mnemonic = ""      # Normalised mnemonic of the instruction
-    self.handler  = None    # Pointer to the function carrying out the instruction task
-    self.addr     = 0       # Address of the instruction in program memory
+    self.mnemonic = ""            # Normalised mnemonic of the instruction
+    self.addr     = 0             # Address of this instruction in the program memory
+    self.handler  = None          # Pointer to the function executing the instruction task
+    
+    # Arguments (populated after the specific instruction method)
+    self._normalisedCode = ""     # Normalised version of the instruction (all caps, proper spacing etc.)
+    self.nArgs = 0
+    self.args = []
 
     # Reference to the CPU instances.
     # An instruction has full control over the internal attributes of the CPU.
-    # There can be more than 1 CPU running simultenously.
     self.nCores = 1
     self.cpu = []
     self.cpuID = 0
 
-    # Arguments (populated after the specific instruction method)
-    self.nArgs = 0
-    self.args = []
-
     # Internal parameters
-    self.size = 32  # Size of the instruction (bits)
+    self.size = 48                # Size of the instruction (bits)
+    
+    # ToDo
     self._cyclesRemaining = self.cycles
     
-    # Declare the instruction set supported by the CPU.
-    # Instructions must be declared in the dictionary as a pair:
-    # - key   : mnemonic (string)
-    # - value : pointer to the custom init function 
+    # Instruction set supported by the CPU.
+    # Instructions must be declared in this dictionary as a pair:
+    # - key   : normalised mnemonic (string)
+    # - value : pointer to the init function 
     # These functions extend the __init__() method.
     self._instructionSet = {
-      # Data transfer 
+      
+      # Data transfer
       "MOV"     : self.__init_MOV,
       
       # Branch
+      "GOTO"    : self.__init_GOTO,
       "JZ"      : self.__init_JZ,
       "JE"      : self.__init_JE,
       "REPEAT"  : self.__init_REPEAT,
@@ -105,10 +110,6 @@ class Instruction :
       "NOP"     : self.__init_NOP,
       "RESET"   : self.__init_RESET
     }
-
-    # Normalised string version of the instruction (all caps, proper spacing etc.)
-    # Populated after 'Instruction._decode()'.
-    self._normalisedCode = ""
 
     # Try to decode the instruction
     self._decode(text)
@@ -133,9 +134,10 @@ class Instruction :
     If the parsing fails, the object's attributes are left to their default 
     state (empty) so that the CPU can detect an exception.
 
-    Valid characters in the text file:
+    Valid characters for an instruction:
     - alphanumeric    : a-z, A-Z, 0-9
     - comma           : ,
+    - dot             : .
     - round brackets  : ()
     - square brackets : []
     - underscore      : _
@@ -324,12 +326,11 @@ class Instruction :
     Arguments: none
 
     Behaviour:
-    - STAT reg  : reset
-    - W_XX regs : unchanged
-    - PC        : +1
+    - STATUS reg  : unchanged
+    - W regs      : unchanged
+    - PC          : PC <- PC + 1
     """
     
-    # Instruction properties
     self.mnemonic = "MOV"
     self.handler = self.__instr_NOP
 
@@ -357,7 +358,6 @@ class Instruction :
     - PC        : TODO
     """
 
-    # Instruction properties
     self.mnemonic = "JZ"
     self.handler = self.__instr_JZ
 
