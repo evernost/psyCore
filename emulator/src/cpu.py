@@ -64,19 +64,20 @@ class cpu :
     self.W = [0 for _ in range(N_WORK_REGS)]
 
     # Status registers
-    self.status_Z = 0
-
-    # Code organization
-    # - cpu.resetAddr : address of the first instruction read after CPU reset
-    # - cpu.irqAddr   : address of the interrupt handler
-    self.resetAddr  = 0
-    self.irqAddr    = 512
-
-    # Faults
-    self.isTrapped = False
+    self.status_Z = 0     # Zero
+    self.status_C = 0     # Carry
 
     # Stack
     self.stack = stack.Stack()
+
+    # Code organization
+    # - cpu.resetAddr     : address of the first instruction read after CPU reset
+    # - cpu.irqHandleAddr : address of the interrupt handler
+    self.resetAddr      = 0
+    self.irqHandleAddr  = 512
+
+    # Faults
+    self.isTrapped = False
 
     # Clock cycles counter
     self.clockCount = 0

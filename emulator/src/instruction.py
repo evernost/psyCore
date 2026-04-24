@@ -94,6 +94,10 @@ class Instruction :
       "JE"      : self.__init_JE,
       "REPEAT"  : self.__init_REPEAT,
       
+      # Stack access
+      "PUSH"  : self.__init_PUSH,
+      "POP"   : self.__init_POP,
+
       # Math
       "ADD"     : self.__init_ADD,
       "SUB"     : self.__init_SUB,
@@ -108,7 +112,11 @@ class Instruction :
       
       # Hardware instructions
       "NOP"     : self.__init_NOP,
-      "RESET"   : self.__init_RESET
+      "HALT"    : self.__init_HALT,
+      "RESET"   : self.__init_RESET,
+
+      # Debug
+      "BKPT"    : self.__init_BKPT
     }
 
     # Try to decode the instruction
@@ -740,7 +748,7 @@ def _asmReaderInstrParse(line: str, verbose = False)  :
 # ---------------------------------------------------------------------------
 def _asmReaderSyntaxCheck(line: str) -> bool :
   """
-  Checks if line of assembly code complies with the syntax rules.
+  Checks if a given line of assembly code complies with the syntax rules.
   
   The function checks the raw syntax only. 
   It does not check if the instruction is used properly (number of arguments etc.)
@@ -757,7 +765,7 @@ def _asmReaderSyntaxCheck(line: str) -> bool :
 
 
 
-class Syntax(enum.Enum):
+class Syntax(enum.Enum) :
   OK = 0
   ERROR = -1
 

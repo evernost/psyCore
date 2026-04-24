@@ -33,15 +33,16 @@ class Stack :
   """
   Stack object.
   
-  Simple CPU stack emulation
+  Simple CPU stack emulation (Last-in, First-out)
   """
 
   def __init__(self) :
     
     self.reg = []
-    self.flagOverflow = False
-    self.flagUnderflow = False
-
+    
+    self.empty = False
+    self.overflow = False
+    
 
 
   # ---------------------------------------------------------------------------
@@ -50,6 +51,30 @@ class Stack :
   def reset(self) :
     """
     Clears the content of the stack.
+    """
+
+    self.reg = []
+
+
+  
+  # ---------------------------------------------------------------------------
+  # METHOD Stack.push()
+  # ---------------------------------------------------------------------------
+  def push(self) :
+    """
+    Pushes an element in the stack.
+    """
+
+    self.reg = []
+
+
+
+  # ---------------------------------------------------------------------------
+  # METHOD Stack.pop()
+  # ---------------------------------------------------------------------------
+  def pop(self) :
+    """
+    Pops an element from the stack.
     """
 
     self.reg = []
